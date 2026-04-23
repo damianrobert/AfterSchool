@@ -1,17 +1,29 @@
-namespace AfterSchool
+using AfterSchool.Data;
+using AfterSchool.Forms;
+
+namespace AfterSchool;
+
+internal static class Program
 {
-    internal static class Program
+    [STAThread]
+    static void Main()
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main()
+        ApplicationConfiguration.Initialize();
+
+        try
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            DatabaseHelper.Initialize();
         }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Failed to initialize database:\n\n{ex.Message}",
+                "AfterSchool",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
+        Application.Run(new MainForm());
     }
 }
