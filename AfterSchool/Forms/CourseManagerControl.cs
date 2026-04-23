@@ -261,12 +261,12 @@ internal sealed class CourseEditorDialog : Form
         var choices = new List<TeacherChoice> { new(null, "— Unassigned —") };
         choices.AddRange(teachers.Select(t => new TeacherChoice(t.Id, UserRepository.DisplayNameOf(t))));
 
-        _teacher.DataSource = choices;
-        _teacher.DisplayMember = nameof(TeacherChoice.Label);
-        _teacher.ValueMember = nameof(TeacherChoice.UserId);
+        _teacher.Items.Clear();
+        foreach (var c in choices) _teacher.Items.Add(c);
 
         if (teachers.Count == 0)
         {
+            _teacher.SelectedIndex = 0;
             _teacher.Enabled = false;
             _teacherHint.Text = "No users have the Teacher role yet. Create one in signup.";
             _teacherHint.ForeColor = Theme.Danger;
@@ -283,15 +283,9 @@ internal sealed class CourseEditorDialog : Form
             c.UserId != null &&
             string.Equals(c.Label, _course.Teacher, StringComparison.OrdinalIgnoreCase));
 
-        if (matchIndex >= 0)
-        {
-            _teacher.SelectedIndex = matchIndex;
-        }
-        else
-        {
-            _teacher.SelectedIndex = 0;
+        _teacher.SelectedIndex = matchIndex >= 0 ? matchIndex : 0;
+        if (matchIndex < 0)
             _teacherHint.Text = $"Previously assigned: {_course.Teacher} (no matching teacher user).";
-        }
     }
 
     private void Save()
