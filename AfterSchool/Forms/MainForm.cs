@@ -5,6 +5,7 @@ namespace AfterSchool.Forms;
 public class MainForm : Form
 {
     private readonly Panel _sidebar;
+    private readonly FlowLayoutPanel _navStack;
     private readonly Panel _content;
     private readonly Label _titleLabel;
     private readonly List<NavButton> _navButtons = new();
@@ -38,6 +39,21 @@ public class MainForm : Form
             Padding = new Padding(24, 0, 0, 0),
             BackColor = Color.FromArgb(15, 23, 42)
         };
+
+        var footer = BuildSidebarFooter();
+
+        _navStack = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoScroll = false,
+            Padding = new Padding(12, 16, 12, 12),
+            BackColor = Theme.Sidebar
+        };
+
+        _sidebar.Controls.Add(_navStack);
+        _sidebar.Controls.Add(footer);
         _sidebar.Controls.Add(brand);
 
         var topBar = new Panel
@@ -61,7 +77,11 @@ public class MainForm : Form
             Padding = new Padding(28, 0, 0, 0),
             Text = "Dashboard"
         };
+
+        var userChip = BuildUserChip();
+
         topBar.Controls.Add(_titleLabel);
+        topBar.Controls.Add(userChip);
 
         _content = new Panel
         {
@@ -83,6 +103,81 @@ public class MainForm : Form
             _navButtons[0].PerformClick();
     }
 
+    private Panel BuildSidebarFooter()
+    {
+        var footer = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 92,
+            BackColor = Color.FromArgb(15, 23, 42),
+            Padding = new Padding(16, 12, 16, 12)
+        };
+
+        var name = new Label
+        {
+            Text = Session.DisplayName,
+            Font = new Font("Segoe UI Semibold", 10f),
+            ForeColor = Color.White,
+            Dock = DockStyle.Top,
+            Height = 20,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        var role = new Label
+        {
+            Text = Session.Current?.Role ?? "",
+            Font = Theme.SmallFont,
+            ForeColor = Color.FromArgb(148, 163, 184),
+            Dock = DockStyle.Top,
+            Height = 18,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        var logout = new Button
+        {
+            Text = "Sign out",
+            Dock = DockStyle.Bottom,
+            Height = 30,
+            Cursor = Cursors.Hand,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(51, 65, 85),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 9.5f)
+        };
+        logout.FlatAppearance.BorderSize = 0;
+        logout.FlatAppearance.MouseOverBackColor = Color.FromArgb(71, 85, 105);
+        logout.Click += (_, _) =>
+        {
+            Session.SignOutRequested = true;
+            Close();
+        };
+
+        footer.Controls.Add(logout);
+        footer.Controls.Add(role);
+        footer.Controls.Add(name);
+        return footer;
+    }
+
+    private Panel BuildUserChip()
+    {
+        var panel = new Panel
+        {
+            Dock = DockStyle.Right,
+            Width = 260,
+            BackColor = Theme.Surface,
+            Padding = new Padding(0, 14, 28, 14)
+        };
+
+        var label = new Label
+        {
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleRight,
+            Font = Theme.BodyFont,
+            ForeColor = Theme.TextPrimary,
+            Text = $"Signed in as  {Session.DisplayName}"
+        };
+        panel.Controls.Add(label);
+        return panel;
+    }
+
     private void AddNavButton(string label, string title, Func<UserControl> factory)
     {
         var btn = new NavButton(label);
@@ -94,22 +189,7 @@ public class MainForm : Form
             SwapView(factory());
         };
         _navButtons.Add(btn);
-
-        var stack = _sidebar.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
-        if (stack == null)
-        {
-            stack = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = false,
-                Padding = new Padding(12, 16, 12, 12),
-                BackColor = Theme.Sidebar
-            };
-            _sidebar.Controls.Add(stack);
-        }
-        stack.Controls.Add(btn);
+        _navStack.Controls.Add(btn);
     }
 
     private void SwapView(UserControl view)

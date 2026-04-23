@@ -32,6 +32,16 @@ public static class DatabaseHelper
         using var conn = CreateConnection();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Users (
+                Id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                Username     TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+                PasswordHash TEXT    NOT NULL,
+                FullName     TEXT    NOT NULL DEFAULT '',
+                Role         TEXT    NOT NULL DEFAULT 'Staff',
+                CreatedDate  TEXT    NOT NULL DEFAULT '',
+                IsActive     INTEGER NOT NULL DEFAULT 1
+            );
+
             CREATE TABLE IF NOT EXISTS Courses (
                 Id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name        TEXT    NOT NULL,

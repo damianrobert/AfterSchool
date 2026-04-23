@@ -33,5 +33,24 @@
 - **Reports tab** — one-click exports plus a live class-list preview
   (per-course grid with summary + "open file" prompt after export).
 
+### Phase 4: Authentication
+- New `Users` table (unique username NOCASE, password hash, full name,
+  role, created date, active flag). Created by `DatabaseHelper.Initialize`.
+- `PasswordHasher` using PBKDF2-SHA256 (100k iterations, 16-byte salt,
+  32-byte hash) stored as `iterations.salt.hash` base64 triplet.
+  Constant-time comparison on verify.
+- `UserRepository` — count, exists (case-insensitive), get by username,
+  insert, authenticate.
+- `Session` static holder for current user + sign-out flag.
+- **LoginForm** — two-panel hero + form layout, auto-opens signup when
+  no users exist yet, link to switch to signup.
+- **SignupForm** — first-run variant prompts for the initial admin,
+  validates username length, password length, confirm match, and
+  username uniqueness.
+- `Program.cs` runs an auth loop: login → `Application.Run(MainForm)` →
+  if sign-out requested, loop back to login; otherwise exit.
+- MainForm sidebar footer shows the signed-in user with a "Sign out"
+  button; top bar shows "Signed in as …".
+
 ### Build
 - `dotnet build`: 0 warnings, 0 errors.
