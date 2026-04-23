@@ -75,9 +75,16 @@ public static class DatabaseHelper
                 FOREIGN KEY (EnrolledCourseId) REFERENCES Courses(Id) ON DELETE SET NULL
             );
 
+            CREATE TABLE IF NOT EXISTS Rooms (
+                Id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT    NOT NULL UNIQUE COLLATE NOCASE
+            );
+
             CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId ON Schedule(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Students_EnrolledCourseId ON Students(EnrolledCourseId);
         ";
         cmd.ExecuteNonQuery();
+
+        RoomRepository.SeedIfEmpty();
     }
 }

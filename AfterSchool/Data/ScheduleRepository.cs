@@ -57,4 +57,24 @@ public static class ScheduleRepository
         using var conn = DatabaseHelper.CreateConnection();
         conn.Execute("DELETE FROM Schedule WHERE Id = @Id", new { Id = id });
     }
+
+    public static IEnumerable<string> GetOccupiedRooms(
+        string dayOfWeek, string startTime, string endTime, int? excludeSlotId = null)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        return conn.Query<string>(@"
+            SELECT DISTINCT Room FROM Schedule
+            WHERE DayOfWeek = @Day COLLATE NOCASE
+              AND StartTime < @EndTime
+              AND EndTime   > @StartTime
+              AND (@ExcludeId IS NULL OR Id != @ExcludeId)
+              AND Room != ''",
+            new
+            {
+                Day = dayOfWeek,
+                StartTime = startTime,
+                EndTime = endTime,
+                ExcludeId = excludeSlotId
+            }).ToList();
+    }
 }
