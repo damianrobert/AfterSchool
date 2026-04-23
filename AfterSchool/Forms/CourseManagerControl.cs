@@ -154,7 +154,8 @@ internal sealed class CourseEditorDialog : Form
     private readonly Course _course;
     private readonly bool _isNew;
     private readonly TextBox _name = new();
-    private readonly TextBox _teacher = new();
+    private readonly ComboBox _teacher = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Label _teacherHint = new();
     private readonly NumericUpDown _capacity = new() { Minimum = 0, Maximum = 500, Value = 20 };
     private readonly TextBox _description = new() { Multiline = true, ScrollBars = ScrollBars.Vertical };
 
@@ -167,19 +168,20 @@ internal sealed class CourseEditorDialog : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        Size = new Size(520, 500);
+        Size = new Size(520, 520);
         BackColor = Theme.Surface;
         Font = Theme.BodyFont;
 
         Theme.StyleTextBox(_name);
-        Theme.StyleTextBox(_teacher);
         Theme.StyleTextBox(_description);
+        _teacher.Font = Theme.BodyFont;
         _capacity.Font = Theme.BodyFont;
 
         _name.Text = _course.Name;
-        _teacher.Text = _course.Teacher;
         _capacity.Value = Math.Clamp(_course.Capacity, 0, 500);
         _description.Text = _course.Description;
+
+        PopulateTeachers();
 
         var layout = new TableLayoutPanel
         {
@@ -199,6 +201,12 @@ internal sealed class CourseEditorDialog : Form
         layout.Controls.Add(Label("Teacher"));
         _teacher.Dock = DockStyle.Top; _teacher.Height = 30;
         layout.Controls.Add(_teacher);
+
+        _teacherHint.Dock = DockStyle.Top;
+        _teacherHint.Height = 18;
+        _teacherHint.Font = Theme.SmallFont;
+        _teacherHint.ForeColor = Theme.TextSecondary;
+        layout.Controls.Add(_teacherHint);
 
         layout.Controls.Add(Spacer(12));
 
@@ -247,6 +255,45 @@ internal sealed class CourseEditorDialog : Form
 
     private static Panel Spacer(int height) => new() { Dock = DockStyle.Top, Height = height, BackColor = Theme.Surface };
 
+    private void PopulateTeachers()
+    {
+        var teachers = UserRepository.GetByRole("Teacher").ToList();
+        var choices = new List<TeacherChoice> { new(null, "— Unassigned —") };
+        choices.AddRange(teachers.Select(t => new TeacherChoice(t.Id, UserRepository.DisplayNameOf(t))));
+
+        _teacher.DataSource = choices;
+        _teacher.DisplayMember = nameof(TeacherChoice.Label);
+        _teacher.ValueMember = nameof(TeacherChoice.UserId);
+
+        if (teachers.Count == 0)
+        {
+            _teacher.Enabled = false;
+            _teacherHint.Text = "No users have the Teacher role yet. Create one in signup.";
+            _teacherHint.ForeColor = Theme.Danger;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_course.Teacher))
+        {
+            _teacher.SelectedIndex = 0;
+            return;
+        }
+
+        var matchIndex = choices.FindIndex(c =>
+            c.UserId != null &&
+            string.Equals(c.Label, _course.Teacher, StringComparison.OrdinalIgnoreCase));
+
+        if (matchIndex >= 0)
+        {
+            _teacher.SelectedIndex = matchIndex;
+        }
+        else
+        {
+            _teacher.SelectedIndex = 0;
+            _teacherHint.Text = $"Previously assigned: {_course.Teacher} (no matching teacher user).";
+        }
+    }
+
     private void Save()
     {
         if (string.IsNullOrWhiteSpace(_name.Text))
@@ -256,8 +303,10 @@ internal sealed class CourseEditorDialog : Form
             return;
         }
 
+        var choice = _teacher.SelectedItem as TeacherChoice;
+
         _course.Name = _name.Text.Trim();
-        _course.Teacher = _teacher.Text.Trim();
+        _course.Teacher = choice?.UserId == null ? "" : choice.Label;
         _course.Capacity = (int)_capacity.Value;
         _course.Description = _description.Text.Trim();
 
@@ -266,5 +315,10 @@ internal sealed class CourseEditorDialog : Form
 
         DialogResult = DialogResult.OK;
         Close();
+    }
+
+    private sealed record TeacherChoice(int? UserId, string Label)
+    {
+        public override string ToString() => Label;
     }
 }
