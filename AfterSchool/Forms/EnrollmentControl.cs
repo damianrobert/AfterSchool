@@ -263,16 +263,17 @@ internal sealed class StudentEditorDialog : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
 
-        AddField(layout, "First name", _firstName, 0);
-        AddField(layout, "Last name", _lastName, 1);
-        AddField(layout, "Email", _email, 0);
-        AddField(layout, "Contact", _contact, 1);
-        AddField(layout, "Birth date", _birth, 0);
-        AddField(layout, "Gender", _gender, 1);
-        AddField(layout, "Register date", _register, 0);
-        AddField(layout, "Status", _status, 1);
-        AddField(layout, "Address", _address, 0, colSpan: 2);
-        AddField(layout, "Enrolled course", _course, 0, colSpan: 2);
+        var cursor = new FieldCursor(layout);
+        cursor.Add("First name", _firstName);
+        cursor.Add("Last name", _lastName);
+        cursor.Add("Email", _email);
+        cursor.Add("Contact", _contact);
+        cursor.Add("Birth date", _birth);
+        cursor.Add("Gender", _gender);
+        cursor.Add("Register date", _register);
+        cursor.Add("Status", _status);
+        cursor.Add("Address", _address, colSpan: 2);
+        cursor.Add("Enrolled course", _course, colSpan: 2);
 
         var ok = new Button { Text = _isNew ? "Create" : "Save" };
         var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
@@ -297,36 +298,40 @@ internal sealed class StudentEditorDialog : Form
         CancelButton = cancel;
     }
 
-    private static readonly Dictionary<TableLayoutPanel, int> RowPerLayout = new();
-
-    private static void AddField(TableLayoutPanel layout, string label, Control control, int col, int colSpan = 1)
+    private sealed class FieldCursor
     {
-        if (!RowPerLayout.TryGetValue(layout, out var row)) row = 0;
+        private readonly TableLayoutPanel _layout;
+        private int _col;
+        private int _row;
 
-        var cell = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface, Height = 64, Margin = new Padding(0, 0, 12, 8) };
-        var lbl = new Label
+        public FieldCursor(TableLayoutPanel layout) { _layout = layout; }
+
+        public void Add(string label, Control control, int colSpan = 1)
         {
-            Text = label,
-            Font = new Font("Segoe UI Semibold", 9.5f),
-            ForeColor = Theme.TextSecondary,
-            Dock = DockStyle.Top,
-            Height = 22
-        };
-        control.Dock = DockStyle.Top;
-        control.Height = 30;
-        control.Font = Theme.BodyFont;
+            var cell = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface, Height = 64, Margin = new Padding(0, 0, 12, 8) };
+            var lbl = new Label
+            {
+                Text = label,
+                Font = new Font("Segoe UI Semibold", 9.5f),
+                ForeColor = Theme.TextSecondary,
+                Dock = DockStyle.Top,
+                Height = 22
+            };
+            control.Dock = DockStyle.Top;
+            control.Height = 30;
+            control.Font = Theme.BodyFont;
+            cell.Controls.Add(control);
+            cell.Controls.Add(lbl);
 
-        cell.Controls.Add(control);
-        cell.Controls.Add(lbl);
+            while (_layout.RowStyles.Count <= _row)
+                _layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
 
-        while (layout.RowStyles.Count <= row)
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
+            _layout.Controls.Add(cell, _col, _row);
+            if (colSpan > 1) _layout.SetColumnSpan(cell, colSpan);
 
-        layout.Controls.Add(cell, col, row);
-        if (colSpan > 1) layout.SetColumnSpan(cell, colSpan);
-
-        if (col + colSpan >= layout.ColumnCount) row++;
-        RowPerLayout[layout] = row;
+            _col += colSpan;
+            if (_col >= _layout.ColumnCount) { _col = 0; _row++; }
+        }
     }
 
     private static DateTime ParseDate(string s, DateTime fallback) =>
