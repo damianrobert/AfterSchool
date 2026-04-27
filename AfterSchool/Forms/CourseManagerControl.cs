@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Models;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -8,9 +9,9 @@ public class CourseManagerControl : UserControl
 {
     private readonly DataGridView _grid = new();
     private readonly TextBox _searchBox = new();
-    private readonly Button _newBtn = new() { Text = "New Course" };
-    private readonly Button _editBtn = new() { Text = "Edit" };
-    private readonly Button _deleteBtn = new() { Text = "Delete" };
+    private readonly Button _newBtn = new();
+    private readonly Button _editBtn = new();
+    private readonly Button _deleteBtn = new();
 
     private List<Course> _courses = new();
 
@@ -23,6 +24,10 @@ public class CourseManagerControl : UserControl
 
     private void BuildLayout()
     {
+        _newBtn.Text = Loc.T("course.btn.new");
+        _editBtn.Text = Loc.T("common.edit");
+        _deleteBtn.Text = Loc.T("common.delete");
+
         var card = new Panel
         {
             Dock = DockStyle.Fill,
@@ -37,7 +42,7 @@ public class CourseManagerControl : UserControl
 
         var toolbar = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.Surface };
 
-        _searchBox.PlaceholderText = "Search courses...";
+        _searchBox.PlaceholderText = Loc.T("course.search");
         _searchBox.Width = 280;
         _searchBox.Left = 0;
         _searchBox.Top = 8;
@@ -104,8 +109,8 @@ public class CourseManagerControl : UserControl
 
         _grid.DataSource = rows;
         if (_grid.Columns["Id"] is { } idCol) idCol.Visible = false;
-        if (_grid.Columns["Name"] is { } n) n.HeaderText = "Course";
-        if (_grid.Columns["Enrolled"] is { } en) en.HeaderText = "Enrolled";
+        if (_grid.Columns["Name"] is { } n) n.HeaderText = Loc.T("course.col.name");
+        if (_grid.Columns["Enrolled"] is { } en) en.HeaderText = Loc.T("course.col.enrolled");
     }
 
     private Course? SelectedCourse()
@@ -127,12 +132,12 @@ public class CourseManagerControl : UserControl
         var c = SelectedCourse();
         if (c == null) return;
         var enrolled = CourseRepository.GetEnrolledCount(c.Id);
-        var warn = enrolled > 0
-            ? $"\n\n{enrolled} student(s) are enrolled. They will be unenrolled."
+        var warning = enrolled > 0
+            ? string.Format(Loc.T("course.delete.enrolled_warning"), enrolled)
             : "";
         var result = MessageBox.Show(
-            $"Delete course \"{c.Name}\"?{warn}",
-            "Confirm delete",
+            string.Format(Loc.T("course.delete.confirm"), c.Name, warning),
+            Loc.T("course.delete.title"),
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning);
         if (result != DialogResult.Yes) return;
@@ -163,7 +168,7 @@ internal sealed class CourseEditorDialog : Form
     {
         _course = existing ?? new Course();
         _isNew = existing == null;
-        Text = _isNew ? "New Course" : "Edit Course";
+        Text = _isNew ? Loc.T("course.editor.title.new") : Loc.T("course.editor.title.edit");
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -192,13 +197,13 @@ internal sealed class CourseEditorDialog : Form
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        layout.Controls.Add(Label("Course name"));
+        layout.Controls.Add(Label(Loc.T("course.field.name")));
         _name.Dock = DockStyle.Top; _name.Height = 30;
         layout.Controls.Add(_name);
 
         layout.Controls.Add(Spacer(12));
 
-        layout.Controls.Add(Label("Teacher"));
+        layout.Controls.Add(Label(Loc.T("course.field.teacher")));
         _teacher.Dock = DockStyle.Top; _teacher.Height = 30;
         layout.Controls.Add(_teacher);
 
@@ -210,18 +215,18 @@ internal sealed class CourseEditorDialog : Form
 
         layout.Controls.Add(Spacer(12));
 
-        layout.Controls.Add(Label("Capacity"));
+        layout.Controls.Add(Label(Loc.T("course.field.capacity")));
         _capacity.Dock = DockStyle.Top; _capacity.Height = 30;
         layout.Controls.Add(_capacity);
 
         layout.Controls.Add(Spacer(12));
 
-        layout.Controls.Add(Label("Description"));
+        layout.Controls.Add(Label(Loc.T("course.field.description")));
         _description.Dock = DockStyle.Top; _description.Height = 120;
         layout.Controls.Add(_description);
 
-        var ok = new Button { Text = _isNew ? "Create" : "Save", DialogResult = DialogResult.None };
-        var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
+        var ok = new Button { Text = _isNew ? Loc.T("common.create") : Loc.T("common.save"), DialogResult = DialogResult.None };
+        var cancel = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel };
         Theme.StyleButton(ok, primary: true);
         Theme.StyleButton(cancel);
         ok.Click += (_, _) => Save();
@@ -258,7 +263,7 @@ internal sealed class CourseEditorDialog : Form
     private void PopulateTeachers()
     {
         var teachers = UserRepository.GetByRole("Teacher").ToList();
-        var choices = new List<TeacherChoice> { new(null, "— Unassigned —") };
+        var choices = new List<TeacherChoice> { new(null, Loc.T("course.teacher.unassigned")) };
         choices.AddRange(teachers.Select(t => new TeacherChoice(t.Id, UserRepository.DisplayNameOf(t))));
 
         _teacher.Items.Clear();
@@ -268,7 +273,7 @@ internal sealed class CourseEditorDialog : Form
         {
             _teacher.SelectedIndex = 0;
             _teacher.Enabled = false;
-            _teacherHint.Text = "No users have the Teacher role yet. Create one in signup.";
+            _teacherHint.Text = Loc.T("course.teacher.none");
             _teacherHint.ForeColor = Theme.Danger;
             return;
         }
@@ -285,14 +290,15 @@ internal sealed class CourseEditorDialog : Form
 
         _teacher.SelectedIndex = matchIndex >= 0 ? matchIndex : 0;
         if (matchIndex < 0)
-            _teacherHint.Text = $"Previously assigned: {_course.Teacher} (no matching teacher user).";
+            _teacherHint.Text = string.Format(Loc.T("course.teacher.missing"), _course.Teacher);
     }
 
     private void Save()
     {
         if (string.IsNullOrWhiteSpace(_name.Text))
         {
-            MessageBox.Show(this, "Course name is required.", "Validation",
+            MessageBox.Show(this, Loc.T("course.validation.name_required"),
+                Loc.T("course.validation.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }

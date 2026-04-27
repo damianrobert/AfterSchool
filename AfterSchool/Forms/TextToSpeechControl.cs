@@ -1,4 +1,5 @@
 using System.Speech.Synthesis;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -8,17 +9,17 @@ public class TextToSpeechControl : UserControl
     private readonly SpeechSynthesizer _synth = new();
 
     private readonly TextBox _textBox = new() { Multiline = true, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true };
-    private readonly Button _playBtn = new() { Text = "Play" };
-    private readonly Button _pauseBtn = new() { Text = "Pause" };
-    private readonly Button _resumeBtn = new() { Text = "Resume" };
-    private readonly Button _stopBtn = new() { Text = "Stop" };
-    private readonly Button _loadBtn = new() { Text = "Load from File" };
-    private readonly Button _saveBtn = new() { Text = "Save to WAV" };
+    private readonly Button _playBtn = new();
+    private readonly Button _pauseBtn = new();
+    private readonly Button _resumeBtn = new();
+    private readonly Button _stopBtn = new();
+    private readonly Button _loadBtn = new();
+    private readonly Button _saveBtn = new();
     private readonly TrackBar _rateBar = new() { Minimum = -10, Maximum = 10, Value = 0, TickFrequency = 2 };
     private readonly TrackBar _volBar = new() { Minimum = 0, Maximum = 100, Value = 100, TickFrequency = 10 };
     private readonly Label _rateValLbl = new() { Text = "0" };
     private readonly Label _volValLbl = new() { Text = "100" };
-    private readonly Label _statusLbl = new() { Text = "Idle" };
+    private readonly Label _statusLbl = new();
 
     public TextToSpeechControl()
     {
@@ -50,13 +51,21 @@ public class TextToSpeechControl : UserControl
         if (!IsDisposed && IsHandleCreated)
             BeginInvoke(() =>
             {
-                SetStatus("Idle", Theme.TextSecondary);
+                SetStatus(Loc.T("tts.status.idle"), Theme.TextSecondary);
                 SetIdleState();
             });
     }
 
     private void BuildLayout()
     {
+        _playBtn.Text = Loc.T("tts.btn.play");
+        _pauseBtn.Text = Loc.T("tts.btn.pause");
+        _resumeBtn.Text = Loc.T("tts.btn.resume");
+        _stopBtn.Text = Loc.T("tts.btn.stop");
+        _loadBtn.Text = Loc.T("tts.btn.load");
+        _saveBtn.Text = Loc.T("tts.btn.save");
+        _statusLbl.Text = Loc.T("tts.status.idle");
+
         var card = new Panel
         {
             Dock = DockStyle.Fill,
@@ -69,7 +78,6 @@ public class TextToSpeechControl : UserControl
             e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
         };
 
-        // ── Button row ────────────────────────────────────────────────────────
         Theme.StyleButton(_playBtn, primary: true);
         Theme.StyleButton(_pauseBtn);
         Theme.StyleButton(_resumeBtn);
@@ -109,7 +117,6 @@ public class TextToSpeechControl : UserControl
         btnRow.Controls.Add(new Panel { Width = 16, Height = 36, BackColor = Theme.Surface });
         btnRow.Controls.Add(_statusLbl);
 
-        // ── Slider row ────────────────────────────────────────────────────────
         _rateValLbl.Font = new Font("Segoe UI Semibold", 9f);
         _rateValLbl.ForeColor = Theme.TextPrimary;
         _rateValLbl.Width = 28;
@@ -145,14 +152,13 @@ public class TextToSpeechControl : UserControl
             BackColor = Theme.Surface,
             Padding = new Padding(0, 2, 0, 4)
         };
-        sliderRow.Controls.Add(MakeSliderGroup("Speed  (-10 to +10)", _rateBar, _rateValLbl, barWidth: 180));
+        sliderRow.Controls.Add(MakeSliderGroup(Loc.T("tts.slider.speed"), _rateBar, _rateValLbl, barWidth: 180));
         sliderRow.Controls.Add(new Panel { Width = 32, Height = 52, BackColor = Theme.Surface });
-        sliderRow.Controls.Add(MakeSliderGroup("Volume  (0 to 100)", _volBar, _volValLbl, barWidth: 200));
+        sliderRow.Controls.Add(MakeSliderGroup(Loc.T("tts.slider.volume"), _volBar, _volValLbl, barWidth: 200));
 
-        // ── Text area ─────────────────────────────────────────────────────────
         Theme.StyleTextBox(_textBox);
         _textBox.Dock = DockStyle.Fill;
-        _textBox.PlaceholderText = "Type or paste text here, or use \"Load from File\" to open a .txt file…";
+        _textBox.PlaceholderText = Loc.T("tts.placeholder");
         _textBox.Font = new Font("Segoe UI", 11f);
 
         card.Controls.Add(_textBox);
@@ -197,14 +203,14 @@ public class TextToSpeechControl : UserControl
         var text = _textBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(text))
         {
-            MessageBox.Show(this, "Enter some text to speak.", "Nothing to speak",
+            MessageBox.Show(this, Loc.T("tts.speak.empty.msg"), Loc.T("tts.speak.empty.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         try
         {
             _synth.SpeakAsync(text);
-            SetStatus("Speaking…", Theme.Primary);
+            SetStatus(Loc.T("tts.status.speaking"), Theme.Primary);
             _playBtn.Enabled = false;
             _pauseBtn.Enabled = true;
             _resumeBtn.Enabled = false;
@@ -214,8 +220,8 @@ public class TextToSpeechControl : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Playback error: {ex.Message}", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, string.Format(Loc.T("tts.error.playback"), ex.Message),
+                Loc.T("tts.error.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -224,14 +230,14 @@ public class TextToSpeechControl : UserControl
         try
         {
             _synth.Pause();
-            SetStatus("Paused", Theme.TextSecondary);
+            SetStatus(Loc.T("tts.status.paused"), Theme.TextSecondary);
             _pauseBtn.Enabled = false;
             _resumeBtn.Enabled = true;
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Pause error: {ex.Message}", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, string.Format(Loc.T("tts.error.pause"), ex.Message),
+                Loc.T("tts.error.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -240,14 +246,14 @@ public class TextToSpeechControl : UserControl
         try
         {
             _synth.Resume();
-            SetStatus("Speaking…", Theme.Primary);
+            SetStatus(Loc.T("tts.status.speaking"), Theme.Primary);
             _pauseBtn.Enabled = true;
             _resumeBtn.Enabled = false;
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Resume error: {ex.Message}", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, string.Format(Loc.T("tts.error.resume"), ex.Message),
+                Loc.T("tts.error.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -258,13 +264,13 @@ public class TextToSpeechControl : UserControl
             if (_synth.State == SynthesizerState.Paused)
                 _synth.Resume();
             _synth.SpeakAsyncCancelAll();
-            SetStatus("Idle", Theme.TextSecondary);
+            SetStatus(Loc.T("tts.status.idle"), Theme.TextSecondary);
             SetIdleState();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Stop error: {ex.Message}", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, string.Format(Loc.T("tts.error.stop"), ex.Message),
+                Loc.T("tts.error.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -274,8 +280,8 @@ public class TextToSpeechControl : UserControl
     {
         using var dlg = new OpenFileDialog
         {
-            Title = "Open text file",
-            Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"
+            Title = Loc.T("tts.load.title"),
+            Filter = Loc.T("tts.load.filter")
         };
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
         try
@@ -284,8 +290,8 @@ public class TextToSpeechControl : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Could not read file:\n{ex.Message}", "Load error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, string.Format(Loc.T("tts.load.error.msg"), ex.Message),
+                Loc.T("tts.load.error.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -294,14 +300,14 @@ public class TextToSpeechControl : UserControl
         var text = _textBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(text))
         {
-            MessageBox.Show(this, "Enter some text to export.", "Nothing to export",
+            MessageBox.Show(this, Loc.T("tts.save.empty.msg"), Loc.T("tts.save.empty.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         using var dlg = new SaveFileDialog
         {
-            Title = "Save speech as WAV",
-            Filter = "WAV audio (*.wav)|*.wav",
+            Title = Loc.T("tts.save.dialog.title"),
+            Filter = Loc.T("tts.save.dialog.filter"),
             FileName = "speech.wav",
             DefaultExt = "wav"
         };
@@ -312,14 +318,14 @@ public class TextToSpeechControl : UserControl
             _synth.SetOutputToWaveFile(dlg.FileName);
             _synth.Speak(text);
             _synth.SetOutputToDefaultAudioDevice();
-            MessageBox.Show(this, $"Audio saved to:\n{dlg.FileName}", "Saved",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, string.Format(Loc.T("tts.save.success.msg"), dlg.FileName),
+                Loc.T("tts.save.success.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
             try { _synth.SetOutputToDefaultAudioDevice(); } catch { /* restore output even on error */ }
-            MessageBox.Show(this, $"Could not save WAV:\n{ex.Message}", "Save error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, string.Format(Loc.T("tts.save.error.msg"), ex.Message),
+                Loc.T("tts.save.error.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

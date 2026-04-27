@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 
 namespace AfterSchool.Services;
@@ -28,6 +29,10 @@ public static class Loc
     private static string _current = "en";
 
     public static string Current => _current;
+
+    /// <summary>CultureInfo matching the current language — use for date/number formatting.</summary>
+    public static CultureInfo Culture =>
+        CultureInfo.GetCultureInfo(_current == "ro" ? "ro-RO" : "en-US");
 
     /// <summary>Call once at startup with the persisted language code.</summary>
     public static void Init(string language)

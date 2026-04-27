@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Models;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -12,10 +13,10 @@ public class SchedulePlannerControl : UserControl
         { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
 
     private readonly TableLayoutPanel _grid = new();
-    private readonly Button _newBtn = new() { Text = "Add Time Slot" };
-    private readonly Button _editBtn = new() { Text = "Edit" };
-    private readonly Button _deleteBtn = new() { Text = "Delete" };
-    private readonly Button _roomsBtn = new() { Text = "Manage Rooms" };
+    private readonly Button _newBtn = new();
+    private readonly Button _editBtn = new();
+    private readonly Button _deleteBtn = new();
+    private readonly Button _roomsBtn = new();
 
     private readonly Dictionary<int, Panel> _dayColumns = new();
     private ScheduleView? _selected;
@@ -30,6 +31,11 @@ public class SchedulePlannerControl : UserControl
 
     private void BuildLayout()
     {
+        _newBtn.Text = Loc.T("schedule.btn.add");
+        _editBtn.Text = Loc.T("common.edit");
+        _deleteBtn.Text = Loc.T("common.delete");
+        _roomsBtn.Text = Loc.T("schedule.btn.manage_rooms");
+
         var card = new Panel
         {
             Dock = DockStyle.Fill,
@@ -73,7 +79,7 @@ public class SchedulePlannerControl : UserControl
 
         var hint = new Label
         {
-            Text = "Click a slot to select. Double-click to edit. Courses run 1h30.",
+            Text = Loc.T("schedule.hint"),
             Font = Theme.SmallFont,
             ForeColor = Theme.TextSecondary,
             TextAlign = ContentAlignment.MiddleLeft,
@@ -100,7 +106,7 @@ public class SchedulePlannerControl : UserControl
         {
             var header = new Label
             {
-                Text = Days[i],
+                Text = Loc.T($"days.{Days[i].ToLower()}"),
                 Font = new Font("Segoe UI Semibold", 10.5f),
                 ForeColor = Theme.TextPrimary,
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -236,8 +242,11 @@ public class SchedulePlannerControl : UserControl
     {
         if (_selected == null) return;
         var result = MessageBox.Show(
-            $"Delete this slot?\n\n{_selected.CourseName}\n{_selected.DayOfWeek} {_selected.StartTime}–{_selected.EndTime}",
-            "Confirm delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            string.Format(Loc.T("schedule.delete.confirm"),
+                _selected.CourseName, _selected.DayOfWeek,
+                _selected.StartTime, _selected.EndTime),
+            Loc.T("schedule.delete.title"),
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (result != DialogResult.Yes) return;
         ScheduleRepository.Delete(_selected.Id);
         ReloadSlots();
@@ -269,6 +278,12 @@ internal sealed class ScheduleEditorDialog : Form
 
     private bool _populating;
 
+    // Wraps a day so the ComboBox shows a translated label but stores the English value.
+    private sealed record DayItem(string Value, string Label)
+    {
+        public override string ToString() => Label;
+    }
+
     public ScheduleEditorDialog(ScheduleView? existing)
     {
         _isNew = existing == null;
@@ -284,7 +299,7 @@ internal sealed class ScheduleEditorDialog : Form
                 Room = existing.Room
             };
 
-        Text = _isNew ? "Add Time Slot" : "Edit Time Slot";
+        Text = _isNew ? Loc.T("schedule.editor.title.new") : Loc.T("schedule.editor.title.edit");
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -340,12 +355,12 @@ internal sealed class ScheduleEditorDialog : Form
             RefreshRooms();
         };
 
-        layout.Controls.Add(FieldLabel("Course"));
+        layout.Controls.Add(FieldLabel(Loc.T("schedule.editor.course")));
         _course.Dock = DockStyle.Top; _course.Height = 30;
         layout.Controls.Add(_course);
 
         layout.Controls.Add(Spacer(12));
-        layout.Controls.Add(FieldLabel("Day"));
+        layout.Controls.Add(FieldLabel(Loc.T("schedule.editor.day")));
         _day.Dock = DockStyle.Top; _day.Height = 30;
         layout.Controls.Add(_day);
 
@@ -364,25 +379,25 @@ internal sealed class ScheduleEditorDialog : Form
         var startCol = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface };
         _startTime.Dock = DockStyle.Bottom; _startTime.Height = 30;
         startCol.Controls.Add(_startTime);
-        startCol.Controls.Add(FieldLabel("Start time"));
+        startCol.Controls.Add(FieldLabel(Loc.T("schedule.editor.starttime")));
 
         var endCol = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface };
         endCol.Controls.Add(_endTimeLabel);
-        endCol.Controls.Add(FieldLabel("End time (auto)"));
+        endCol.Controls.Add(FieldLabel(Loc.T("schedule.editor.endtime")));
 
         times.Controls.Add(startCol, 0, 0);
         times.Controls.Add(endCol, 1, 0);
         layout.Controls.Add(times);
 
         layout.Controls.Add(Spacer(12));
-        layout.Controls.Add(FieldLabel("Room"));
+        layout.Controls.Add(FieldLabel(Loc.T("schedule.editor.room")));
         _room.Dock = DockStyle.Top; _room.Height = 30;
         layout.Controls.Add(_room);
 
         layout.Controls.Add(_hint);
 
-        var ok = new Button { Text = _isNew ? "Add" : "Save" };
-        var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
+        var ok = new Button { Text = _isNew ? Loc.T("common.add") : Loc.T("common.save") };
+        var cancel = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel };
         Theme.StyleButton(ok, primary: true);
         Theme.StyleButton(cancel);
         ok.Click += (_, _) => Save();
@@ -413,7 +428,7 @@ internal sealed class ScheduleEditorDialog : Form
 
         if (courses.Count == 0)
         {
-            _hint.Text = "No courses yet — create a course first.";
+            _hint.Text = Loc.T("schedule.editor.nocourses");
             _hint.ForeColor = Theme.Danger;
         }
         else
@@ -428,8 +443,9 @@ internal sealed class ScheduleEditorDialog : Form
     {
         _populating = true;
         _day.Items.Clear();
-        foreach (var d in Days) _day.Items.Add(d);
-        _day.SelectedItem = Days.Contains(_slot.DayOfWeek) ? _slot.DayOfWeek : Days[0];
+        var items = Days.Select(d => new DayItem(d, Loc.T($"days.{d.ToLower()}"))).ToArray();
+        foreach (var item in items) _day.Items.Add(item);
+        _day.SelectedItem = items.FirstOrDefault(d => d.Value == _slot.DayOfWeek) ?? items[0];
         _populating = false;
     }
 
@@ -482,7 +498,7 @@ internal sealed class ScheduleEditorDialog : Form
         var available = allRooms.Where(r => !occupied.Contains(r.Name)).ToList();
         if (available.Count == 0)
         {
-            _room.Items.Add("— No rooms available —");
+            _room.Items.Add(Loc.T("schedule.rooms.noavailable"));
             _room.SelectedIndex = 0;
             _room.Enabled = false;
         }
@@ -502,28 +518,28 @@ internal sealed class ScheduleEditorDialog : Form
 
         if (allRooms.Count == 0)
         {
-            _hint.Text = "No rooms exist yet — use “Manage Rooms” to add them.";
+            _hint.Text = Loc.T("schedule.rooms.noexist");
             _hint.ForeColor = Theme.Danger;
         }
         else if (occupied.Count > 0 && available.Count == 0)
         {
-            _hint.Text = $"All {allRooms.Count} rooms are booked in this time frame.";
+            _hint.Text = string.Format(Loc.T("schedule.rooms.allbooked"), allRooms.Count);
             _hint.ForeColor = Theme.Danger;
         }
         else if (occupied.Count > 0)
         {
-            _hint.Text = $"{occupied.Count} room(s) already booked in this time frame.";
+            _hint.Text = string.Format(Loc.T("schedule.rooms.booked"), occupied.Count);
             _hint.ForeColor = Theme.TextSecondary;
         }
         else
         {
-            _hint.Text = $"{available.Count} room(s) available.";
+            _hint.Text = string.Format(Loc.T("schedule.rooms.available"), available.Count);
             _hint.ForeColor = Theme.TextSecondary;
         }
     }
 
     private string CurrentStartTime() => _startTime.SelectedItem?.ToString() ?? _slot.StartTime;
-    private string CurrentDay() => _day.SelectedItem?.ToString() ?? _slot.DayOfWeek;
+    private string CurrentDay() => (_day.SelectedItem as DayItem)?.Value ?? _slot.DayOfWeek;
 
     private static string ComputeEndTime(string startTime)
     {
@@ -556,13 +572,15 @@ internal sealed class ScheduleEditorDialog : Form
     {
         if (_course.SelectedItem is not Course course)
         {
-            MessageBox.Show(this, "No course available — create a course first.", "Validation",
+            MessageBox.Show(this, Loc.T("schedule.editor.validation.nocourse"),
+                Loc.T("schedule.editor.validation.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         if (_room.SelectedItem is not Room room)
         {
-            MessageBox.Show(this, "Pick an available room.", "Validation",
+            MessageBox.Show(this, Loc.T("schedule.editor.validation.noroom"),
+                Loc.T("schedule.editor.validation.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -571,7 +589,8 @@ internal sealed class ScheduleEditorDialog : Form
         var end = ComputeEndTime(start);
         if (string.IsNullOrEmpty(end))
         {
-            MessageBox.Show(this, "Pick a valid start time.", "Validation",
+            MessageBox.Show(this, Loc.T("schedule.editor.validation.notime"),
+                Loc.T("schedule.editor.validation.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -583,8 +602,8 @@ internal sealed class ScheduleEditorDialog : Form
         if (conflicting)
         {
             MessageBox.Show(this,
-                $"{room.Name} is already booked on {day} between {start} and {end}.",
-                "Room unavailable",
+                string.Format(Loc.T("schedule.editor.conflict"), room.Name, day, start, end),
+                Loc.T("schedule.editor.conflict.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             RefreshRooms();
             return;
@@ -608,13 +627,13 @@ internal sealed class RoomsDialog : Form
 {
     private readonly ListBox _list = new() { Font = new Font("Segoe UI", 10f) };
     private readonly TextBox _newName = new();
-    private readonly Button _addBtn = new() { Text = "Add" };
-    private readonly Button _removeBtn = new() { Text = "Remove" };
+    private readonly Button _addBtn = new();
+    private readonly Button _removeBtn = new();
     private readonly Label _status = new();
 
     public RoomsDialog()
     {
-        Text = "Manage Rooms";
+        Text = Loc.T("rooms.title");
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -631,7 +650,7 @@ internal sealed class RoomsDialog : Form
     {
         var header = new Label
         {
-            Text = "Classrooms",
+            Text = Loc.T("rooms.header"),
             Font = new Font("Segoe UI Semibold", 14f),
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
@@ -639,7 +658,7 @@ internal sealed class RoomsDialog : Form
         };
         var sub = new Label
         {
-            Text = "Add or remove rooms used by the schedule.",
+            Text = Loc.T("rooms.sub"),
             Font = Theme.SmallFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -648,8 +667,10 @@ internal sealed class RoomsDialog : Form
 
         Theme.StyleTextBox(_newName);
         _newName.Width = 220;
-        _newName.PlaceholderText = "e.g. Room 301";
+        _newName.PlaceholderText = Loc.T("rooms.placeholder");
 
+        _addBtn.Text = Loc.T("common.add");
+        _removeBtn.Text = Loc.T("common.remove");
         Theme.StyleButton(_addBtn, primary: true);
         Theme.StyleButton(_removeBtn, danger: true);
         _addBtn.Click += (_, _) => AddRoom();
@@ -677,7 +698,13 @@ internal sealed class RoomsDialog : Form
         var bottom = new Panel { Dock = DockStyle.Bottom, Height = 48, BackColor = Theme.Surface };
         _removeBtn.Dock = DockStyle.Right;
         _removeBtn.Width = 110;
-        var close = new Button { Text = "Close", DialogResult = DialogResult.OK, Dock = DockStyle.Right, Width = 100 };
+        var close = new Button
+        {
+            Text = Loc.T("common.close"),
+            DialogResult = DialogResult.OK,
+            Dock = DockStyle.Right,
+            Width = 100
+        };
         Theme.StyleButton(close);
         bottom.Controls.Add(close);
         bottom.Controls.Add(_removeBtn);
@@ -704,7 +731,7 @@ internal sealed class RoomsDialog : Form
             var match = rooms.FirstOrDefault(r => r.Id == selected.Id);
             if (match != null) _list.SelectedItem = match;
         }
-        _status.Text = $"{rooms.Count} room(s).";
+        _status.Text = string.Format(Loc.T("rooms.count"), rooms.Count);
         _status.ForeColor = Theme.TextSecondary;
     }
 
@@ -713,13 +740,13 @@ internal sealed class RoomsDialog : Form
         var name = _newName.Text.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            _status.Text = "Enter a room name.";
+            _status.Text = Loc.T("rooms.enter_name");
             _status.ForeColor = Theme.Danger;
             return;
         }
         if (RoomRepository.Exists(name))
         {
-            _status.Text = "That room already exists.";
+            _status.Text = Loc.T("rooms.already_exists");
             _status.ForeColor = Theme.Danger;
             return;
         }
@@ -732,18 +759,20 @@ internal sealed class RoomsDialog : Form
     {
         if (_list.SelectedItem is not Room room)
         {
-            _status.Text = "Select a room first.";
+            _status.Text = Loc.T("rooms.select_first");
             _status.ForeColor = Theme.Danger;
             return;
         }
         var uses = RoomRepository.UsageCount(room.Id);
         if (uses > 0)
         {
-            _status.Text = $"Can't remove “{room.Name}” — used in {uses} schedule slot(s).";
+            _status.Text = string.Format(Loc.T("rooms.in_use"), room.Name, uses);
             _status.ForeColor = Theme.Danger;
             return;
         }
-        var confirm = MessageBox.Show(this, $"Remove “{room.Name}”?", "Confirm",
+        var confirm = MessageBox.Show(this,
+            string.Format(Loc.T("rooms.confirm_remove"), room.Name),
+            Loc.T("rooms.confirm_title"),
             MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (confirm != DialogResult.Yes) return;
         RoomRepository.Delete(room.Id);

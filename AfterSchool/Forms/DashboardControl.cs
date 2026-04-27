@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Models;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -57,7 +58,7 @@ public class DashboardControl : UserControl
 
         var greeting = new Label
         {
-            Text = $"Hi, {Session.DisplayName}",
+            Text = string.Format(Loc.T("dashboard.greeting"), Session.DisplayName),
             Font = new Font("Segoe UI Semibold", 22f),
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
@@ -66,7 +67,7 @@ public class DashboardControl : UserControl
         };
         var sub = new Label
         {
-            Text = DateTime.Today.ToString("dddd, MMMM d, yyyy"),
+            Text = DateTime.Today.ToString("dddd, MMMM d, yyyy", Loc.Culture),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -105,21 +106,27 @@ public class DashboardControl : UserControl
             string.Equals(s.DayOfWeek, today, StringComparison.OrdinalIgnoreCase));
         var roomsCount = RoomRepository.GetAll().Count();
 
+        var teachersSub = string.Format(
+            teachersCount == 1
+                ? Loc.T("dashboard.stat.teachers.sub")
+                : Loc.T("dashboard.stat.teachers.sub.plural"),
+            teachersCount);
+
         grid.Controls.Add(BuildStatCard(
-            "Students", students.Count.ToString(),
-            $"{activeStudents} active",
+            Loc.T("dashboard.stat.students"), students.Count.ToString(),
+            string.Format(Loc.T("dashboard.stat.students.sub"), activeStudents),
             AccentBlue, marginRight: 16), 0, 0);
         grid.Controls.Add(BuildStatCard(
-            "Courses", courses.Count.ToString(),
-            $"{teachersCount} teacher{(teachersCount == 1 ? "" : "s")}",
+            Loc.T("dashboard.stat.courses"), courses.Count.ToString(),
+            teachersSub,
             AccentPurple, marginRight: 16), 1, 0);
         grid.Controls.Add(BuildStatCard(
-            "Today's Classes", todaysClasses.ToString(),
-            today,
+            Loc.T("dashboard.stat.todayclasses"), todaysClasses.ToString(),
+            DateTime.Today.ToString("dddd", Loc.Culture),
             AccentAmber, marginRight: 16), 2, 0);
         grid.Controls.Add(BuildStatCard(
-            "Classrooms", roomsCount.ToString(),
-            "Configured",
+            Loc.T("dashboard.stat.classrooms"), roomsCount.ToString(),
+            Loc.T("dashboard.stat.classrooms.sub"),
             AccentGreen, marginRight: 0), 3, 0);
 
         return grid;
@@ -219,11 +226,13 @@ public class DashboardControl : UserControl
 
         if (slots.Count == 0)
         {
+            var emptyText = today == "Sunday"
+                ? Loc.T("dashboard.schedule.nosunday")
+                : string.Format(Loc.T("dashboard.schedule.noclasses"),
+                    DateTime.Today.ToString("dddd", Loc.Culture));
             var empty = new Label
             {
-                Text = today == "Sunday"
-                    ? "No classes scheduled on Sunday."
-                    : $"No classes scheduled for {today}.",
+                Text = emptyText,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = Theme.BodyFont,
@@ -237,7 +246,12 @@ public class DashboardControl : UserControl
                 body.Controls.Add(BuildScheduleRow(slot));
         }
 
-        return BuildCard("Today's Schedule", $"{slots.Count} class{(slots.Count == 1 ? "" : "es")}", body);
+        var sub = string.Format(
+            slots.Count == 1
+                ? Loc.T("dashboard.card.todayschedule.sub")
+                : Loc.T("dashboard.card.todayschedule.sub.plural"),
+            slots.Count);
+        return BuildCard(Loc.T("dashboard.card.todayschedule"), sub, body);
     }
 
     private Panel BuildScheduleRow(ScheduleView s)
@@ -300,7 +314,7 @@ public class DashboardControl : UserControl
         {
             var empty = new Label
             {
-                Text = "No courses yet. Create one in Courses.",
+                Text = Loc.T("dashboard.courses.empty"),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = Theme.BodyFont,
@@ -315,9 +329,12 @@ public class DashboardControl : UserControl
         }
 
         var total = courses.Sum(c => c.Enrolled);
-        return BuildCard("Top Courses by Enrollment",
-            $"{total} enrolled across {courses.Count} course{(courses.Count == 1 ? "" : "s")}",
-            body);
+        var sub = string.Format(
+            courses.Count == 1
+                ? Loc.T("dashboard.card.topcourses.sub")
+                : Loc.T("dashboard.card.topcourses.sub.plural"),
+            total, courses.Count);
+        return BuildCard(Loc.T("dashboard.card.topcourses"), sub, body);
     }
 
     private Panel BuildCourseBar(string name, int enrolled, int capacity)
@@ -339,9 +356,12 @@ public class DashboardControl : UserControl
             Height = 20,
             TextAlign = ContentAlignment.MiddleLeft
         };
+        var countText = capacity > 0
+            ? string.Format(Loc.T("dashboard.course.enrolled"), enrolled, capacity)
+            : string.Format(Loc.T("dashboard.course.enrolled.nolimit"), enrolled);
         var countLbl = new Label
         {
-            Text = capacity > 0 ? $"{enrolled} / {capacity} enrolled" : $"{enrolled} enrolled",
+            Text = countText,
             Font = Theme.SmallFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -390,7 +410,7 @@ public class DashboardControl : UserControl
         {
             var empty = new Label
             {
-                Text = "No students registered yet. Add some from the Enrollment Center.",
+                Text = Loc.T("dashboard.students.empty"),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = Theme.BodyFont,
@@ -414,9 +434,12 @@ public class DashboardControl : UserControl
             body.Controls.Add(grid);
         }
 
-        return BuildCard("Recent Registrations",
-            $"Latest {students.Count} student{(students.Count == 1 ? "" : "s")}",
-            body);
+        var sub = string.Format(
+            students.Count == 1
+                ? Loc.T("dashboard.card.recentreg.sub")
+                : Loc.T("dashboard.card.recentreg.sub.plural"),
+            students.Count);
+        return BuildCard(Loc.T("dashboard.card.recentreg"), sub, body);
     }
 
     // ---------------- Shared card shell ----------------

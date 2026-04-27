@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Models;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -37,7 +38,7 @@ public class SignupForm : Form
 
         var heading = new Label
         {
-            Text = _firstRun ? "Welcome — let's set up the first account" : "Create an account",
+            Text = _firstRun ? Loc.T("signup.heading.first_run") : Loc.T("signup.heading"),
             Font = new Font("Segoe UI Semibold", 18f),
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
@@ -45,9 +46,7 @@ public class SignupForm : Form
         };
         var sub = new Label
         {
-            Text = _firstRun
-                ? "No users exist yet. This account will be an administrator."
-                : "Register to access the management system.",
+            Text = _firstRun ? Loc.T("signup.sub.first_run") : Loc.T("signup.sub"),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -60,6 +59,7 @@ public class SignupForm : Form
             tb.Font = new Font("Segoe UI", 10.5f);
         }
 
+        // Role values are stored in DB as English — not translated
         _role.Items.AddRange(new object[] { "Staff", "Teacher", "Administrator" });
         _role.SelectedItem = _firstRun ? "Administrator" : "Staff";
         _role.Font = Theme.BodyFont;
@@ -69,7 +69,12 @@ public class SignupForm : Form
         _error.ForeColor = Theme.Danger;
         _error.Font = Theme.SmallFont;
 
-        var createBtn = new Button { Text = _firstRun ? "Create account & sign in" : "Create account", Dock = DockStyle.Top, Height = 42 };
+        var createBtn = new Button
+        {
+            Text = _firstRun ? Loc.T("signup.btn.first_run") : Loc.T("signup.btn"),
+            Dock = DockStyle.Top,
+            Height = 42
+        };
         Theme.StyleButton(createBtn, primary: true);
         createBtn.Font = new Font("Segoe UI Semibold", 10.5f);
         createBtn.Click += (_, _) => TrySignup();
@@ -77,7 +82,7 @@ public class SignupForm : Form
         var switchPanel = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Theme.Surface, Padding = new Padding(0, 12, 0, 0) };
         var prompt = new Label
         {
-            Text = "Already have an account?",
+            Text = Loc.T("signup.switch.prompt"),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             AutoSize = true,
@@ -86,7 +91,7 @@ public class SignupForm : Form
         };
         var loginLink = new LinkLabel
         {
-            Text = "Sign in",
+            Text = Loc.T("signup.switch.link"),
             Font = new Font("Segoe UI Semibold", 10f),
             LinkColor = Theme.Primary,
             ActiveLinkColor = Theme.PrimaryHover,
@@ -108,11 +113,11 @@ public class SignupForm : Form
         root.Controls.Add(Spacer(8));
         root.Controls.Add(_error);
 
-        AddField(root, "Role", _role);
-        AddField(root, "Confirm password", _confirm);
-        AddField(root, "Password", _password);
-        AddField(root, "Username", _username);
-        AddField(root, "Full name", _fullName);
+        AddField(root, Loc.T("signup.field.role"), _role);
+        AddField(root, Loc.T("signup.field.confirm"), _confirm);
+        AddField(root, Loc.T("signup.field.password"), _password);
+        AddField(root, Loc.T("signup.field.username"), _username);
+        AddField(root, Loc.T("signup.field.fullname"), _fullName);
 
         root.Controls.Add(Spacer(16));
         root.Controls.Add(sub);
@@ -152,32 +157,32 @@ public class SignupForm : Form
 
         if (string.IsNullOrWhiteSpace(fullName))
         {
-            _error.Text = "Full name is required.";
+            _error.Text = Loc.T("signup.validation.fullname");
             _fullName.Focus();
             return;
         }
         if (username.Length < 3)
         {
-            _error.Text = "Username must be at least 3 characters.";
+            _error.Text = Loc.T("signup.validation.username_length");
             _username.Focus();
             return;
         }
         if (password.Length < 6)
         {
-            _error.Text = "Password must be at least 6 characters.";
+            _error.Text = Loc.T("signup.validation.password_length");
             _password.Focus();
             return;
         }
         if (password != confirm)
         {
-            _error.Text = "Passwords do not match.";
+            _error.Text = Loc.T("signup.validation.password_match");
             _confirm.SelectAll();
             _confirm.Focus();
             return;
         }
         if (UserRepository.UsernameExists(username))
         {
-            _error.Text = "That username is already taken.";
+            _error.Text = Loc.T("signup.validation.username_taken");
             _username.Focus();
             return;
         }
@@ -198,7 +203,7 @@ public class SignupForm : Form
         }
         catch (Exception ex)
         {
-            _error.Text = $"Could not create account: {ex.Message}";
+            _error.Text = string.Format(Loc.T("signup.validation.create_failed"), ex.Message);
             return;
         }
 

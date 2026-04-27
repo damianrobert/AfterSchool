@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Models;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -74,7 +75,7 @@ public class LoginForm : Form
 
         var heading = new Label
         {
-            Text = "Welcome back",
+            Text = Loc.T("login.heading"),
             Font = new Font("Segoe UI Semibold", 22f),
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
@@ -82,7 +83,7 @@ public class LoginForm : Form
         };
         var sub = new Label
         {
-            Text = "Sign in to continue to your dashboard.",
+            Text = Loc.T("login.sub"),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -94,9 +95,9 @@ public class LoginForm : Form
         _username.Font = new Font("Segoe UI", 11f);
         _password.Font = new Font("Segoe UI", 11f);
 
-        var usernameLabel = FieldLabel("Username");
+        var usernameLabel = FieldLabel(Loc.T("login.field.username"));
         _username.Dock = DockStyle.Top; _username.Height = 34;
-        var passwordLabel = FieldLabel("Password");
+        var passwordLabel = FieldLabel(Loc.T("login.field.password"));
         _password.Dock = DockStyle.Top; _password.Height = 34;
 
         _error.Dock = DockStyle.Top;
@@ -106,7 +107,7 @@ public class LoginForm : Form
         _error.TextAlign = ContentAlignment.MiddleLeft;
         _error.Text = "";
 
-        var loginBtn = new Button { Text = "Sign in", Dock = DockStyle.Top, Height = 44 };
+        var loginBtn = new Button { Text = Loc.T("login.btn.signin"), Dock = DockStyle.Top, Height = 44 };
         Theme.StyleButton(loginBtn, primary: true);
         loginBtn.Font = new Font("Segoe UI Semibold", 11f);
         loginBtn.Click += (_, _) => TryLogin();
@@ -114,7 +115,7 @@ public class LoginForm : Form
         var switchPanel = new Panel { Dock = DockStyle.Top, Height = 40, BackColor = Theme.Surface, Padding = new Padding(0, 14, 0, 0) };
         var prompt = new Label
         {
-            Text = "Don't have an account?",
+            Text = Loc.T("login.switch.prompt"),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             AutoSize = true,
@@ -123,7 +124,7 @@ public class LoginForm : Form
         };
         var signupLink = new LinkLabel
         {
-            Text = "Create one",
+            Text = Loc.T("login.switch.link"),
             Font = new Font("Segoe UI Semibold", 10f),
             LinkColor = Theme.Primary,
             ActiveLinkColor = Theme.PrimaryHover,
@@ -175,14 +176,14 @@ public class LoginForm : Form
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
-            _error.Text = "Enter a username and password.";
+            _error.Text = Loc.T("login.validation.empty");
             return;
         }
 
         var user = UserRepository.Authenticate(username, password);
         if (user == null)
         {
-            _error.Text = "Invalid username or password.";
+            _error.Text = Loc.T("login.validation.invalid");
             _password.SelectAll();
             _password.Focus();
             return;

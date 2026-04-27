@@ -91,5 +91,28 @@
   - `SpeakCompleted` handler guards against post-dispose invocation with
     `IsDisposed` / `IsHandleCreated` checks before `BeginInvoke`.
 
+### Phase 7: Full EN/RO Language Support (2026-04-27)
+- Added `Loc.Culture` property (`CultureInfo`) so date formatting respects the
+  active language (e.g. `DateTime.Today.ToString("dddd, MMMM d, yyyy", Loc.Culture)`
+  yields Romanian weekday/month names when RO is active).
+- Expanded `en.json` and `ro.json` from 38 keys to ~180 keys, covering every
+  screen: Dashboard, Schedule Planner, Enrollment Center, Course Manager,
+  Reports, Text-to-Speech, Login, and Signup.
+- Key groups added: `days.*`, `dashboard.*`, `schedule.*`, `rooms.*`,
+  `enrollment.*`, `course.*`, `reports.*`, `tts.*`, `login.*`, `signup.*`.
+- Updated all 8 form files (`DashboardControl`, `SchedulePlannerControl`,
+  `EnrollmentControl`, `CourseManagerControl`, `ReportsControl`,
+  `TextToSpeechControl`, `LoginForm`, `SignupForm`) to call `Loc.T("key")`
+  or `string.Format(Loc.T("key"), args)` instead of hardcoded strings.
+- `SchedulePlannerControl`: introduced private `DayItem(Value, Label)` record
+  so the day dropdown shows translated labels (Luni/Marți/…) while storing
+  the English value used for DB queries, preserving data integrity.
+- Role and status values stored in the database (Staff/Teacher/Administrator,
+  Active/Inactive/Graduated) are intentionally left untranslated to avoid
+  corrupting existing records.
+- Because `MainForm.OnLanguageChanged()` already destroys and recreates the
+  active `UserControl`, all translated strings are automatically picked up
+  in every control's constructor with zero extra wiring.
+
 ### Build
 - `dotnet build`: 0 warnings, 0 errors.

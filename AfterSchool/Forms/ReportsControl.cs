@@ -55,7 +55,7 @@ public class ReportsControl : UserControl
 
         var header = new Label
         {
-            Text = "Excel exports",
+            Text = Loc.T("reports.export.header"),
             Font = Theme.HeadingFont,
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
@@ -63,7 +63,7 @@ public class ReportsControl : UserControl
         };
         var hint = new Label
         {
-            Text = "Exports are saved to your Downloads folder.",
+            Text = Loc.T("reports.export.hint"),
             Font = Theme.SmallFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -79,13 +79,13 @@ public class ReportsControl : UserControl
             Padding = new Padding(0, 16, 0, 0)
         };
 
-        AddExportButton(buttons, "Export all students",
+        AddExportButton(buttons, Loc.T("reports.btn.all_students"),
             () => SafeExport(ExcelExportService.ExportAllStudents));
-        AddExportButton(buttons, "Export courses",
+        AddExportButton(buttons, Loc.T("reports.btn.courses"),
             () => SafeExport(ExcelExportService.ExportCourses));
-        AddExportButton(buttons, "Export class lists",
+        AddExportButton(buttons, Loc.T("reports.btn.class_lists"),
             () => SafeExport(ExcelExportService.ExportClassLists));
-        AddExportButton(buttons, "Export schedule",
+        AddExportButton(buttons, Loc.T("reports.btn.schedule"),
             () => SafeExport(ExcelExportService.ExportSchedule));
 
         card.Controls.Add(buttons);
@@ -110,7 +110,7 @@ public class ReportsControl : UserControl
 
         var header = new Label
         {
-            Text = "Class list",
+            Text = Loc.T("reports.classlist.header"),
             Font = Theme.HeadingFont,
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
@@ -121,7 +121,7 @@ public class ReportsControl : UserControl
 
         var lbl = new Label
         {
-            Text = "Course",
+            Text = Loc.T("reports.classlist.course_label"),
             Font = new Font("Segoe UI Semibold", 9.5f),
             ForeColor = Theme.TextSecondary,
             Top = 4,
@@ -142,7 +142,7 @@ public class ReportsControl : UserControl
         _summary.Width = 320;
         _summary.Height = 22;
 
-        var exportBtn = new Button { Text = "Export this class list" };
+        var exportBtn = new Button { Text = Loc.T("reports.btn.export_classlist") };
         Theme.StyleButton(exportBtn, primary: true);
         exportBtn.Top = 14;
         exportBtn.Left = 0;
@@ -211,9 +211,10 @@ public class ReportsControl : UserControl
         }).ToList();
 
         if (_classList.Columns["Id"] is { } idCol) idCol.Visible = false;
-        if (_classList.Columns["ContactNo"] is { } c) c.HeaderText = "Contact";
+        if (_classList.Columns["ContactNo"] is { } c) c.HeaderText = Loc.T("enrollment.col.contact");
 
-        _summary.Text = $"{students.Count} / {course.Capacity} enrolled · Teacher: {course.Teacher}";
+        _summary.Text = string.Format(Loc.T("reports.classlist.summary"),
+            students.Count, course.Capacity, course.Teacher);
     }
 
     private void SafeExport(Func<string> exportFn)
@@ -222,8 +223,8 @@ public class ReportsControl : UserControl
         {
             var path = exportFn();
             var result = MessageBox.Show(
-                $"Exported to:\n{path}\n\nOpen now?",
-                "Export complete",
+                string.Format(Loc.T("reports.export.success_msg"), path),
+                Loc.T("reports.export.success_title"),
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Information);
             if (result == DialogResult.Yes)
@@ -232,8 +233,8 @@ public class ReportsControl : UserControl
         catch (Exception ex)
         {
             MessageBox.Show(
-                $"Export failed:\n\n{ex.Message}",
-                "Error",
+                string.Format(Loc.T("reports.export.error_msg"), ex.Message),
+                Loc.T("reports.export.error_title"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Models;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -9,10 +10,10 @@ public class EnrollmentControl : UserControl
     private readonly DataGridView _grid = new();
     private readonly TextBox _searchBox = new();
     private readonly ComboBox _courseFilter = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly Button _newBtn = new() { Text = "New Student" };
-    private readonly Button _editBtn = new() { Text = "Edit" };
-    private readonly Button _transferBtn = new() { Text = "Transfer" };
-    private readonly Button _deleteBtn = new() { Text = "Delete" };
+    private readonly Button _newBtn = new();
+    private readonly Button _editBtn = new();
+    private readonly Button _transferBtn = new();
+    private readonly Button _deleteBtn = new();
 
     private List<StudentView> _students = new();
 
@@ -25,6 +26,11 @@ public class EnrollmentControl : UserControl
 
     private void BuildLayout()
     {
+        _newBtn.Text = Loc.T("enrollment.btn.new");
+        _editBtn.Text = Loc.T("common.edit");
+        _transferBtn.Text = Loc.T("common.transfer");
+        _deleteBtn.Text = Loc.T("common.delete");
+
         var card = new Panel
         {
             Dock = DockStyle.Fill,
@@ -39,7 +45,7 @@ public class EnrollmentControl : UserControl
 
         var toolbar = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.Surface };
 
-        _searchBox.PlaceholderText = "Search name or email...";
+        _searchBox.PlaceholderText = Loc.T("enrollment.search");
         _searchBox.Width = 260;
         _searchBox.Left = 0;
         _searchBox.Top = 10;
@@ -95,8 +101,8 @@ public class EnrollmentControl : UserControl
 
         var currentFilter = _courseFilter.SelectedItem as CourseFilterItem;
         _courseFilter.Items.Clear();
-        _courseFilter.Items.Add(new CourseFilterItem(null, "All students"));
-        _courseFilter.Items.Add(new CourseFilterItem(-1, "Unenrolled"));
+        _courseFilter.Items.Add(new CourseFilterItem(null, Loc.T("enrollment.filter.all")));
+        _courseFilter.Items.Add(new CourseFilterItem(-1, Loc.T("enrollment.filter.unenrolled")));
         foreach (var c in CourseRepository.GetAll())
             _courseFilter.Items.Add(new CourseFilterItem(c.Id, c.Name));
         _courseFilter.SelectedIndex = 0;
@@ -145,7 +151,7 @@ public class EnrollmentControl : UserControl
 
         _grid.DataSource = rows;
         if (_grid.Columns["Id"] is { } idCol) idCol.Visible = false;
-        if (_grid.Columns["ContactNo"] is { } c) c.HeaderText = "Contact";
+        if (_grid.Columns["ContactNo"] is { } c) c.HeaderText = Loc.T("enrollment.col.contact");
     }
 
     private StudentView? SelectedStudent()
@@ -167,8 +173,9 @@ public class EnrollmentControl : UserControl
         var s = SelectedStudent();
         if (s == null) return;
         var result = MessageBox.Show(
-            $"Delete student \"{s.LastName}, {s.FirstName}\"?",
-            "Confirm delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            string.Format(Loc.T("enrollment.delete.confirm"), s.LastName, s.FirstName),
+            Loc.T("enrollment.delete.title"),
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (result != DialogResult.Yes) return;
         StudentRepository.Delete(s.Id);
         LoadStudents();
@@ -219,7 +226,7 @@ internal sealed class StudentEditorDialog : Form
             Status = "Active"
         };
 
-        Text = _isNew ? "New Student" : "Edit Student";
+        Text = _isNew ? Loc.T("enrollment.editor.title.new") : Loc.T("enrollment.editor.title.edit");
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -231,10 +238,11 @@ internal sealed class StudentEditorDialog : Form
         foreach (var tb in new[] { _firstName, _lastName, _email, _contact, _address })
             Theme.StyleTextBox(tb);
 
+        // Gender and status values are stored in DB as English — not translated
         _gender.Items.AddRange(new object[] { "Female", "Male", "Other" });
         _status.Items.AddRange(new object[] { "Active", "Inactive", "Graduated" });
 
-        var courses = new List<CourseChoice> { new(null, "— Not enrolled —") };
+        var courses = new List<CourseChoice> { new(null, Loc.T("enrollment.not_enrolled")) };
         courses.AddRange(CourseRepository.GetAll().Select(c => new CourseChoice(c.Id, c.Name)));
         foreach (var c in courses) _course.Items.Add(c);
 
@@ -261,19 +269,19 @@ internal sealed class StudentEditorDialog : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
 
         var cursor = new FieldCursor(layout);
-        cursor.Add("First name", _firstName);
-        cursor.Add("Last name", _lastName);
-        cursor.Add("Email", _email);
-        cursor.Add("Contact", _contact);
-        cursor.Add("Birth date", _birth);
-        cursor.Add("Gender", _gender);
-        cursor.Add("Register date", _register);
-        cursor.Add("Status", _status);
-        cursor.Add("Address", _address, colSpan: 2);
-        cursor.Add("Enrolled course", _course, colSpan: 2);
+        cursor.Add(Loc.T("enrollment.field.firstname"), _firstName);
+        cursor.Add(Loc.T("enrollment.field.lastname"), _lastName);
+        cursor.Add(Loc.T("enrollment.field.email"), _email);
+        cursor.Add(Loc.T("enrollment.field.contact"), _contact);
+        cursor.Add(Loc.T("enrollment.field.birthdate"), _birth);
+        cursor.Add(Loc.T("enrollment.field.gender"), _gender);
+        cursor.Add(Loc.T("enrollment.field.registerdate"), _register);
+        cursor.Add(Loc.T("enrollment.field.status"), _status);
+        cursor.Add(Loc.T("enrollment.field.address"), _address, colSpan: 2);
+        cursor.Add(Loc.T("enrollment.field.course"), _course, colSpan: 2);
 
-        var ok = new Button { Text = _isNew ? "Create" : "Save" };
-        var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
+        var ok = new Button { Text = _isNew ? Loc.T("common.create") : Loc.T("common.save") };
+        var cancel = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel };
         Theme.StyleButton(ok, primary: true);
         Theme.StyleButton(cancel);
         ok.Click += (_, _) => Save();
@@ -338,7 +346,7 @@ internal sealed class StudentEditorDialog : Form
     {
         if (string.IsNullOrWhiteSpace(_firstName.Text) || string.IsNullOrWhiteSpace(_lastName.Text))
         {
-            MessageBox.Show(this, "First and last name are required.", "Validation",
+            MessageBox.Show(this, Loc.T("enrollment.validation.name_required"), Loc.T("schedule.editor.validation.title"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -377,7 +385,7 @@ internal sealed class TransferDialog : Form
     public TransferDialog(StudentView student)
     {
         _student = student;
-        Text = "Transfer Student";
+        Text = Loc.T("enrollment.transfer.title");
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -388,7 +396,7 @@ internal sealed class TransferDialog : Form
 
         var choices = new List<StudentEditorDialog.CourseChoice>
         {
-            new(null, "— Unenroll —")
+            new(null, Loc.T("enrollment.unenroll"))
         };
         choices.AddRange(CourseRepository.GetAll()
             .Select(c => new StudentEditorDialog.CourseChoice(c.Id, c.Name)));
@@ -407,7 +415,8 @@ internal sealed class TransferDialog : Form
         };
         var currentLbl = new Label
         {
-            Text = $"Currently: {_student.CourseName ?? "unenrolled"}",
+            Text = string.Format(Loc.T("enrollment.transfer.currently"),
+                _student.CourseName ?? Loc.T("enrollment.transfer.unenrolled")),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -415,7 +424,7 @@ internal sealed class TransferDialog : Form
         };
         var pickLbl = new Label
         {
-            Text = "Transfer to",
+            Text = Loc.T("enrollment.transfer.to"),
             Font = new Font("Segoe UI Semibold", 9.5f),
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -431,8 +440,8 @@ internal sealed class TransferDialog : Form
         body.Controls.Add(currentLbl);
         body.Controls.Add(header);
 
-        var ok = new Button { Text = "Transfer" };
-        var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
+        var ok = new Button { Text = Loc.T("common.transfer") };
+        var cancel = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel };
         Theme.StyleButton(ok, primary: true);
         Theme.StyleButton(cancel);
         ok.Click += (_, _) =>
