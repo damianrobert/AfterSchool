@@ -75,6 +75,7 @@ public class MainForm : Form
 
         topBar.Controls.Add(_titleLabel);
         topBar.Controls.Add(BuildUserChip());
+        topBar.Controls.Add(BuildLangPanel());
 
         _content = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Background, Padding = new Padding(24) };
 
@@ -165,23 +166,37 @@ public class MainForm : Form
         return footer;
     }
 
-    // ── Top-bar user chip + language toggle ───────────────────────────────────
+    // ── Top-bar: user chip and language toggle (separate right-docked panels) ──
 
     private Panel BuildUserChip()
     {
         var panel = new Panel
         {
             Dock = DockStyle.Right,
-            Width = 340,
-            BackColor = Theme.Surface
+            Width = 260,
+            BackColor = Theme.Surface,
+            Padding = new Padding(0, 14, 28, 14)
         };
 
-        // Language toggle button — absolute positioned, vertically centred
+        _userChipLbl.Dock = DockStyle.Fill;
+        _userChipLbl.TextAlign = ContentAlignment.MiddleRight;
+        _userChipLbl.Font = Theme.BodyFont;
+        _userChipLbl.ForeColor = Theme.TextPrimary;
+        _userChipLbl.Text = $"{Loc.T("main.signedin")}  {Session.DisplayName}";
+
+        panel.Controls.Add(_userChipLbl);
+        return panel;
+    }
+
+    private Panel BuildLangPanel()
+    {
+        var panel = new Panel { Dock = DockStyle.Right, Width = 80, BackColor = Theme.Surface };
+
         _langBtn.Text = Loc.Current.ToUpper();
         _langBtn.Width = 52;
         _langBtn.Height = 32;
+        _langBtn.Left = (80 - 52) / 2;
         _langBtn.Top = (70 - 32) / 2;
-        _langBtn.Left = 340 - 52 - 28;
         _langBtn.Font = new Font("Segoe UI Semibold", 9f);
         _langBtn.Cursor = Cursors.Hand;
         _langBtn.FlatStyle = FlatStyle.Flat;
@@ -192,15 +207,6 @@ public class MainForm : Form
         _langBtn.FlatAppearance.MouseOverBackColor = Theme.Border;
         _langBtn.Click += (_, _) => Loc.SetLanguage(Loc.Current == "en" ? "ro" : "en");
 
-        // "Signed in as  Username" label — fills the chip, leaves room for the button
-        _userChipLbl.Dock = DockStyle.Fill;
-        _userChipLbl.TextAlign = ContentAlignment.MiddleRight;
-        _userChipLbl.Font = Theme.BodyFont;
-        _userChipLbl.ForeColor = Theme.TextPrimary;
-        _userChipLbl.Text = $"{Loc.T("main.signedin")}  {Session.DisplayName}";
-        _userChipLbl.Padding = new Padding(0, 0, 72, 0); // don't overlap langBtn
-
-        panel.Controls.Add(_userChipLbl);
         panel.Controls.Add(_langBtn);
         return panel;
     }
