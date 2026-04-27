@@ -87,6 +87,7 @@ public class MainForm : Form
         AddNavButton("nav.courses",   "nav.courses.title",   () => new CourseManagerControl());
         AddNavButton("nav.schedule",  "nav.schedule.title",  () => new SchedulePlannerControl());
         AddNavButton("nav.students",  "nav.students.title",  () => new EnrollmentControl());
+        AddNavButton("nav.grades",    "nav.grades.title",    () => new GradesControl());
         AddNavButton("nav.reports",   "nav.reports.title",   () => new ReportsControl());
         AddNavButton("nav.tts",       "nav.tts.title",       () => new TextToSpeechControl());
 

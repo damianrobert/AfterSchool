@@ -162,7 +162,15 @@ internal sealed class CourseEditorDialog : Form
     private readonly ComboBox _teacher = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label _teacherHint = new();
     private readonly NumericUpDown _capacity = new() { Minimum = 0, Maximum = 500, Value = 20 };
+    private readonly ComboBox _gradingScale = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly TextBox _description = new() { Multiline = true, ScrollBars = ScrollBars.Vertical };
+
+    private static readonly (string Value, string LabelKey)[] ScaleOptions =
+    {
+        ("Numeric",  "grades.scale.numeric"),
+        ("Letter",   "grades.scale.letter"),
+        ("PassFail", "grades.scale.passfail"),
+    };
 
     public CourseEditorDialog(Course? existing)
     {
@@ -173,7 +181,7 @@ internal sealed class CourseEditorDialog : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        Size = new Size(520, 520);
+        Size = new Size(520, 600);
         BackColor = Theme.Surface;
         Font = Theme.BodyFont;
 
@@ -181,12 +189,14 @@ internal sealed class CourseEditorDialog : Form
         Theme.StyleTextBox(_description);
         _teacher.Font = Theme.BodyFont;
         _capacity.Font = Theme.BodyFont;
+        _gradingScale.Font = Theme.BodyFont;
 
         _name.Text = _course.Name;
         _capacity.Value = Math.Clamp(_course.Capacity, 0, 500);
         _description.Text = _course.Description;
 
         PopulateTeachers();
+        PopulateGradingScale();
 
         var layout = new TableLayoutPanel
         {
@@ -218,6 +228,12 @@ internal sealed class CourseEditorDialog : Form
         layout.Controls.Add(Label(Loc.T("course.field.capacity")));
         _capacity.Dock = DockStyle.Top; _capacity.Height = 30;
         layout.Controls.Add(_capacity);
+
+        layout.Controls.Add(Spacer(12));
+
+        layout.Controls.Add(Label(Loc.T("course.field.gradingscale")));
+        _gradingScale.Dock = DockStyle.Top; _gradingScale.Height = 30;
+        layout.Controls.Add(_gradingScale);
 
         layout.Controls.Add(Spacer(12));
 
@@ -259,6 +275,16 @@ internal sealed class CourseEditorDialog : Form
     };
 
     private static Panel Spacer(int height) => new() { Dock = DockStyle.Top, Height = height, BackColor = Theme.Surface };
+
+    private void PopulateGradingScale()
+    {
+        _gradingScale.Items.Clear();
+        foreach (var (value, labelKey) in ScaleOptions)
+            _gradingScale.Items.Add(new ScaleChoice(value, Loc.T(labelKey)));
+
+        var idx = Array.FindIndex(ScaleOptions, o => o.Value == _course.GradingScale);
+        _gradingScale.SelectedIndex = Math.Max(0, idx);
+    }
 
     private void PopulateTeachers()
     {
@@ -304,10 +330,12 @@ internal sealed class CourseEditorDialog : Form
         }
 
         var choice = _teacher.SelectedItem as TeacherChoice;
+        var scaleChoice = _gradingScale.SelectedItem as ScaleChoice;
 
         _course.Name = _name.Text.Trim();
         _course.Teacher = choice?.UserId == null ? "" : choice.Label;
         _course.Capacity = (int)_capacity.Value;
+        _course.GradingScale = scaleChoice?.Value ?? "Numeric";
         _course.Description = _description.Text.Trim();
 
         if (_isNew) CourseRepository.Insert(_course);
@@ -318,6 +346,11 @@ internal sealed class CourseEditorDialog : Form
     }
 
     private sealed record TeacherChoice(int? UserId, string Label)
+    {
+        public override string ToString() => Label;
+    }
+
+    private sealed record ScaleChoice(string Value, string Label)
     {
         public override string ToString() => Label;
     }

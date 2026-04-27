@@ -114,5 +114,42 @@
   active `UserControl`, all translated strings are automatically picked up
   in every control's constructor with zero extra wiring.
 
+### Phase 8: Grades & Performance Tracking (2026-04-27)
+
+**Database**
+- New `Grades` table: `StudentId`, `CourseId`, `Score`, `Notes`, `GradedDate`, `GradedBy`.
+  UNIQUE constraint on `(StudentId, CourseId)` — one grade per student per course.
+  ON DELETE CASCADE from both Students and Courses.
+- `GradingScale` column added to `Courses` table via `MigrateSchema()` (idempotent `ALTER TABLE`).
+  Supported values: `"Numeric"` (1–10), `"Letter"` (A–F), `"PassFail"`.
+- `GradeRepository` — `GetByCourse` (LEFT JOINs all enrolled students so ungraded rows appear),
+  `GetByStudent`, `Upsert` (INSERT … ON CONFLICT DO UPDATE), `Delete`.
+
+**Course Manager**
+- `CourseEditorDialog` gains a **Grading scale** ComboBox (Numeric / Letter / Pass-Fail).
+  Stored as English key in DB; displayed translated.
+
+**Grades screen** (`nav.grades` → `GradesControl`)
+- Course selector dropdown at top; loads all enrolled students for the selected course.
+- DataGridView shows: Rank | Student | Score | Notes | Date | Graded by.
+  Rank is computed as dense rank (numeric desc); Letter/PassFail shows row number.
+- **Stats bar** below toolbar adapts to scale type:
+  - Numeric: Graded count, Average, High, Low.
+  - Letter: distribution per letter grade.
+  - Pass/Fail: pass count, fail count, pass rate %.
+- **Add / Edit Grade** button opens `GradeEditorDialog`:
+  - Score control adapts to scale: `NumericUpDown` (1–10, step 0.5) / `ComboBox` (A–F / Pass–Fail).
+  - Notes, Date (DateTimePicker), Graded-by (auto-filled from session user).
+  - Upsert on save.
+- **Clear Grade** removes the selected student's grade after confirmation.
+- **Export Grades** → `ExcelExportService.ExportGradeSheet(course)` — grade sheet with title,
+  teacher, scale info, sorted student list, average row at bottom.
+- **Transcript** button opens `TranscriptDialog`:
+  - Student selector; shows all grades across courses.
+  - Export Transcript → `ExcelExportService.ExportTranscript(student, grades)`.
+
+**Localisation**
+- Added `nav.grades.*`, `grades.*`, `course.field.gradingscale` keys to both `en.json` and `ro.json`.
+
 ### Build
 - `dotnet build`: 0 warnings, 0 errors.

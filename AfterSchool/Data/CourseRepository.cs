@@ -22,8 +22,8 @@ public static class CourseRepository
     {
         using var conn = DatabaseHelper.CreateConnection();
         return conn.ExecuteScalar<int>(@"
-            INSERT INTO Courses (Name, Teacher, Description, Capacity)
-            VALUES (@Name, @Teacher, @Description, @Capacity);
+            INSERT INTO Courses (Name, Teacher, Description, Capacity, GradingScale)
+            VALUES (@Name, @Teacher, @Description, @Capacity, @GradingScale);
             SELECT last_insert_rowid();", course);
     }
 
@@ -32,7 +32,8 @@ public static class CourseRepository
         using var conn = DatabaseHelper.CreateConnection();
         conn.Execute(@"
             UPDATE Courses
-            SET Name = @Name, Teacher = @Teacher, Description = @Description, Capacity = @Capacity
+            SET Name = @Name, Teacher = @Teacher, Description = @Description,
+                Capacity = @Capacity, GradingScale = @GradingScale
             WHERE Id = @Id", course);
     }
 

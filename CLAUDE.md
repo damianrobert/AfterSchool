@@ -80,6 +80,31 @@ The application needs to look modern and professional.
 2. **Schedule Planner**: A weekly grid view where staff can assign time slots.
 3. **Enrollment Center**: The primary student management form.
 
+## How to add translations to a new feature
+
+Step 1 — pick a key following the naming convention:
+nav.<page> sidebar label
+nav.<page>.title top-bar title
+common.<action> shared across many screens
+<screen>.<element> screen-specific, e.g. "attendance.btn.mark"
+
+Step 2 — add to both JSON files
+// en.json
+"attendance.btn.mark": "Mark Attendance"
+
+// ro.json
+"attendance.btn.mark": "Marchează prezența"
+
+Step 3 — use in code
+var btn = new Button { Text = Loc.T("attendance.btn.mark") };
+
+That's it. Because MainForm.OnLanguageChanged() calls PerformClick() on the active nav button, any UserControl is destroyed
+and recreated when the language switches — so every Loc.T() call in a constructor or BuildLayout() method automatically picks
+up the new language with zero extra work.
+
+The EN/RO toggle button appears in the top-right corner of the main window. The choice is saved to settings.json and restored
+on the next launch.
+
 ### Git workflow
 
 1. Make sure you are in the 'dev' branch.

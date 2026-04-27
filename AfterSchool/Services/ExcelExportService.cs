@@ -1,3 +1,4 @@
+using System.Globalization;
 using AfterSchool.Data;
 using AfterSchool.Models;
 using ClosedXML.Excel;
@@ -179,6 +180,99 @@ public static class ExcelExportService
             sheet.Cell(r, 5).Value = s.Teacher;
             sheet.Cell(r, 6).Value = s.Room;
         }
+        sheet.Columns().AdjustToContents();
+        wb.SaveAs(file);
+        return file;
+    }
+
+    public static string ExportGradeSheet(Course course)
+    {
+        var grades = GradeRepository.GetByCourse(course.Id).ToList();
+        var file = UniqueName($"GradeSheet_{course.Name}");
+
+        using var wb = new XLWorkbook();
+        var sheet = wb.AddWorksheet(SanitizeSheetName(course.Name));
+
+        sheet.Cell(1, 1).Value = $"Grade Sheet — {course.Name}";
+        sheet.Cell(1, 1).Style.Font.FontSize = 14;
+        sheet.Cell(1, 1).Style.Font.Bold = true;
+        sheet.Range(1, 1, 1, 6).Merge();
+
+        sheet.Cell(2, 1).Value = $"Teacher: {course.Teacher}";
+        sheet.Cell(2, 3).Value = $"Scale: {course.GradingScale}";
+        sheet.Cell(2, 5).Value = $"Exported: {DateTime.Today:yyyy-MM-dd}";
+
+        WriteHeader(sheet, new[] { "#", "Last name", "First name", "Score", "Notes", "Date" }, row: 4);
+
+        IEnumerable<GradeView> sorted = course.GradingScale == "Numeric"
+            ? grades.OrderByDescending(g =>
+                double.TryParse(g.Score, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : -1)
+              .ThenBy(g => g.StudentLastName).ThenBy(g => g.StudentFirstName)
+            : grades.OrderBy(g => g.StudentLastName).ThenBy(g => g.StudentFirstName);
+
+        int i = 0;
+        foreach (var g in sorted)
+        {
+            int r = i + 5;
+            sheet.Cell(r, 1).Value = i + 1;
+            sheet.Cell(r, 2).Value = g.StudentLastName;
+            sheet.Cell(r, 3).Value = g.StudentFirstName;
+            sheet.Cell(r, 4).Value = string.IsNullOrEmpty(g.Score) ? "—" : g.Score;
+            sheet.Cell(r, 5).Value = g.Notes;
+            sheet.Cell(r, 6).Value = g.GradedDate;
+            i++;
+        }
+
+        // Stats row
+        var graded = grades.Where(g => !string.IsNullOrEmpty(g.Score)).ToList();
+        if (graded.Count > 0 && course.GradingScale == "Numeric")
+        {
+            var scores = graded.Select(g =>
+                double.TryParse(g.Score, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : (double?)null)
+                .Where(v => v.HasValue).Select(v => v!.Value).ToList();
+            if (scores.Count > 0)
+            {
+                int statsRow = i + 6;
+                sheet.Cell(statsRow, 3).Value = "Average:";
+                sheet.Cell(statsRow, 4).Value = $"{scores.Average():F1}";
+                sheet.Cell(statsRow, 3).Style.Font.Bold = true;
+            }
+        }
+
+        sheet.Columns().AdjustToContents();
+        wb.SaveAs(file);
+        return file;
+    }
+
+    public static string ExportTranscript(StudentView student, IEnumerable<GradeView> grades)
+    {
+        var gradeList = grades.ToList();
+        var file = UniqueName($"Transcript_{student.LastName}_{student.FirstName}");
+
+        using var wb = new XLWorkbook();
+        var sheet = wb.AddWorksheet("Transcript");
+
+        var name = $"{student.FirstName} {student.LastName}";
+        sheet.Cell(1, 1).Value = $"Transcript — {name}";
+        sheet.Cell(1, 1).Style.Font.FontSize = 14;
+        sheet.Cell(1, 1).Style.Font.Bold = true;
+        sheet.Range(1, 1, 1, 5).Merge();
+
+        sheet.Cell(2, 1).Value = $"Exported: {DateTime.Today:yyyy-MM-dd}";
+
+        WriteHeader(sheet, new[] { "Course", "Scale", "Score", "Notes", "Date" }, row: 4);
+
+        for (int i = 0; i < gradeList.Count; i++)
+        {
+            var g = gradeList[i];
+            int r = i + 5;
+            sheet.Cell(r, 1).Value = g.CourseName;
+            sheet.Cell(r, 2).Value = g.GradingScale;
+            sheet.Cell(r, 3).Value = string.IsNullOrEmpty(g.Score) ? "—" : g.Score;
+            sheet.Cell(r, 4).Value = g.Notes;
+            sheet.Cell(r, 5).Value = g.GradedDate;
+        }
+
         sheet.Columns().AdjustToContents();
         wb.SaveAs(file);
         return file;

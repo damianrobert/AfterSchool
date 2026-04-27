@@ -80,11 +80,38 @@ public static class DatabaseHelper
                 Name TEXT    NOT NULL UNIQUE COLLATE NOCASE
             );
 
-            CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId ON Schedule(CourseId);
+            CREATE TABLE IF NOT EXISTS Grades (
+                Id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                StudentId  INTEGER NOT NULL,
+                CourseId   INTEGER NOT NULL,
+                Score      TEXT    NOT NULL DEFAULT '',
+                Notes      TEXT    NOT NULL DEFAULT '',
+                GradedDate TEXT    NOT NULL DEFAULT '',
+                GradedBy   TEXT    NOT NULL DEFAULT '',
+                UNIQUE(StudentId, CourseId),
+                FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
+                FOREIGN KEY (CourseId)  REFERENCES Courses(Id)  ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId        ON Schedule(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Students_EnrolledCourseId ON Students(EnrolledCourseId);
+            CREATE INDEX IF NOT EXISTS IX_Grades_CourseId           ON Grades(CourseId);
+            CREATE INDEX IF NOT EXISTS IX_Grades_StudentId          ON Grades(StudentId);
         ";
         cmd.ExecuteNonQuery();
 
+        MigrateSchema(conn);
         RoomRepository.SeedIfEmpty();
+    }
+
+    private static void MigrateSchema(SqliteConnection conn)
+    {
+        try
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "ALTER TABLE Courses ADD COLUMN GradingScale TEXT NOT NULL DEFAULT 'Numeric';";
+            cmd.ExecuteNonQuery();
+        }
+        catch { /* column already exists */ }
     }
 }
