@@ -94,6 +94,7 @@ public class MainForm : Form
         Controls.Add(topBar);
         Controls.Add(_sidebar);
 
+        AddNavButton("Dashboard", "Dashboard", () => new DashboardControl());
         AddNavButton("Courses", "Course Manager", () => new CourseManagerControl());
         AddNavButton("Schedule", "Weekly Schedule Planner", () => new SchedulePlannerControl());
         AddNavButton("Students", "Enrollment Center", () => new EnrollmentControl());

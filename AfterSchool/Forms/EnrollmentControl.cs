@@ -236,9 +236,7 @@ internal sealed class StudentEditorDialog : Form
 
         var courses = new List<CourseChoice> { new(null, "— Not enrolled —") };
         courses.AddRange(CourseRepository.GetAll().Select(c => new CourseChoice(c.Id, c.Name)));
-        _course.DataSource = courses;
-        _course.DisplayMember = nameof(CourseChoice.Label);
-        _course.ValueMember = nameof(CourseChoice.CourseId);
+        foreach (var c in courses) _course.Items.Add(c);
 
         _firstName.Text = _student.FirstName;
         _lastName.Text = _student.LastName;
@@ -249,9 +247,8 @@ internal sealed class StudentEditorDialog : Form
         _status.SelectedItem = string.IsNullOrEmpty(_student.Status) ? "Active" : _student.Status;
         _birth.Value = ParseDate(_student.BirthDate, DateTime.Today.AddYears(-10));
         _register.Value = ParseDate(_student.RegisterDate, DateTime.Today);
-        _course.SelectedValue = _student.EnrolledCourseId ?? (object)DBNull.Value;
-        _course.SelectedIndex = courses.FindIndex(c => c.CourseId == _student.EnrolledCourseId);
-        if (_course.SelectedIndex < 0) _course.SelectedIndex = 0;
+        var courseIdx = courses.FindIndex(c => c.CourseId == _student.EnrolledCourseId);
+        _course.SelectedIndex = courseIdx >= 0 ? courseIdx : 0;
 
         var layout = new TableLayoutPanel
         {
@@ -395,9 +392,7 @@ internal sealed class TransferDialog : Form
         };
         choices.AddRange(CourseRepository.GetAll()
             .Select(c => new StudentEditorDialog.CourseChoice(c.Id, c.Name)));
-        _course.DataSource = choices;
-        _course.DisplayMember = "Label";
-        _course.ValueMember = "CourseId";
+        foreach (var c in choices) _course.Items.Add(c);
         var idx = choices.FindIndex(c => c.CourseId == student.EnrolledCourseId);
         _course.SelectedIndex = idx >= 0 ? idx : 0;
         _course.Font = Theme.BodyFont;

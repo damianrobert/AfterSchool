@@ -52,5 +52,21 @@
 - MainForm sidebar footer shows the signed-in user with a "Sign out"
   button; top bar shows "Signed in as …".
 
+### Phase 5: Dashboard & Bug Fixes (2026-04-27)
+- **Dashboard** — landing screen with four stat cards (total students / active
+  count, course count / teacher count, today's scheduled classes, classrooms),
+  a "Today's Schedule" card listing time slots for the current weekday, a "Top
+  Courses by Enrollment" bar-chart card, and a "Recent Registrations" grid
+  showing the latest 8 students. Wired into MainForm as the first nav item so
+  it opens on launch.
+- **Bug fix** — `StudentEditorDialog` and `TransferDialog` course ComboBoxes
+  crashed with `ArgumentOutOfRangeException` (SelectedIndex=0 on empty list)
+  because `DataSource`/`DisplayMember`/`ValueMember` binding with a nullable
+  `int?` ValueMember can silently clear items. Fixed by replacing DataSource
+  binding with plain `Items.Add` calls.
+- **UI fix** — `Theme.StyleButton` now sets `AutoSize = true` with
+  `MinimumSize`/`MaximumSize` locking height at 36 px, so button text is
+  never clipped regardless of label length.
+
 ### Build
 - `dotnet build`: 0 warnings, 0 errors.

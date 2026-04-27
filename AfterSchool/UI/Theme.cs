@@ -33,7 +33,10 @@ public static class Theme
         b.FlatAppearance.BorderSize = 0;
         b.Font = BodyFont;
         b.Cursor = Cursors.Hand;
-        b.Height = 36;
+        b.AutoSize = true;
+        b.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        b.MinimumSize = new Size(0, 36);
+        b.MaximumSize = new Size(0, 36);
         b.Padding = new Padding(12, 0, 12, 0);
 
         if (primary)
