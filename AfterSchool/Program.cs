@@ -1,5 +1,6 @@
 using AfterSchool.Data;
 using AfterSchool.Forms;
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool;
@@ -10,6 +11,9 @@ internal static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
+
+        AppSettings.Load();
+        Loc.Init(AppSettings.Language);
 
         try
         {

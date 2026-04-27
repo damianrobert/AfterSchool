@@ -1,3 +1,4 @@
+using AfterSchool.Services;
 using AfterSchool.UI;
 
 namespace AfterSchool.Forms;
@@ -11,6 +12,12 @@ public class MainForm : Form
     private readonly List<NavButton> _navButtons = new();
     private UserControl? _currentView;
 
+    // Fields that need live text updates on language change
+    private readonly Button _langBtn = new();
+    private readonly Label _userChipLbl = new();
+    private readonly Button _signOutBtn = new();
+    private string _activeTitleKey = "nav.dashboard.title";
+
     public MainForm()
     {
         Text = "AfterSchool Management System";
@@ -21,12 +28,7 @@ public class MainForm : Form
         Font = Theme.BodyFont;
         Icon = SystemIcons.Application;
 
-        _sidebar = new Panel
-        {
-            Dock = DockStyle.Left,
-            Width = 240,
-            BackColor = Theme.Sidebar
-        };
+        _sidebar = new Panel { Dock = DockStyle.Left, Width = 240, BackColor = Theme.Sidebar };
 
         var brand = new Label
         {
@@ -40,8 +42,6 @@ public class MainForm : Form
             BackColor = Color.FromArgb(15, 23, 42)
         };
 
-        var footer = BuildSidebarFooter();
-
         _navStack = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -53,15 +53,10 @@ public class MainForm : Form
         };
 
         _sidebar.Controls.Add(_navStack);
-        _sidebar.Controls.Add(footer);
+        _sidebar.Controls.Add(BuildSidebarFooter());
         _sidebar.Controls.Add(brand);
 
-        var topBar = new Panel
-        {
-            Dock = DockStyle.Top,
-            Height = 70,
-            BackColor = Theme.Surface
-        };
+        var topBar = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Theme.Surface };
         topBar.Paint += (_, e) =>
         {
             using var pen = new Pen(Theme.Border);
@@ -75,34 +70,53 @@ public class MainForm : Form
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft,
             Padding = new Padding(28, 0, 0, 0),
-            Text = "Dashboard"
+            Text = Loc.T(_activeTitleKey)
         };
-
-        var userChip = BuildUserChip();
 
         topBar.Controls.Add(_titleLabel);
-        topBar.Controls.Add(userChip);
+        topBar.Controls.Add(BuildUserChip());
 
-        _content = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = Theme.Background,
-            Padding = new Padding(24)
-        };
+        _content = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Background, Padding = new Padding(24) };
 
         Controls.Add(_content);
         Controls.Add(topBar);
         Controls.Add(_sidebar);
 
-        AddNavButton("Dashboard", "Dashboard", () => new DashboardControl());
-        AddNavButton("Courses", "Course Manager", () => new CourseManagerControl());
-        AddNavButton("Schedule", "Weekly Schedule Planner", () => new SchedulePlannerControl());
-        AddNavButton("Students", "Enrollment Center", () => new EnrollmentControl());
-        AddNavButton("Reports", "Reports & Export", () => new ReportsControl());
-        AddNavButton("Text to Speech", "Text to Speech", () => new TextToSpeechControl());
+        AddNavButton("nav.dashboard", "nav.dashboard.title", () => new DashboardControl());
+        AddNavButton("nav.courses",   "nav.courses.title",   () => new CourseManagerControl());
+        AddNavButton("nav.schedule",  "nav.schedule.title",  () => new SchedulePlannerControl());
+        AddNavButton("nav.students",  "nav.students.title",  () => new EnrollmentControl());
+        AddNavButton("nav.reports",   "nav.reports.title",   () => new ReportsControl());
+        AddNavButton("nav.tts",       "nav.tts.title",       () => new TextToSpeechControl());
 
+        Loc.LanguageChanged += OnLanguageChanged;
         Load += (_, _) => _navButtons[0].PerformClick();
     }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) Loc.LanguageChanged -= OnLanguageChanged;
+        base.Dispose(disposing);
+    }
+
+    private void OnLanguageChanged()
+    {
+        // Update nav button labels
+        foreach (var b in _navButtons) b.UpdateLabel();
+
+        // Update top bar
+        _titleLabel.Text = Loc.T(_activeTitleKey);
+        _userChipLbl.Text = $"{Loc.T("main.signedin")}  {Session.DisplayName}";
+        _langBtn.Text = Loc.Current.ToUpper();
+
+        // Update sidebar footer
+        _signOutBtn.Text = Loc.T("main.signout");
+
+        // Recreate the active view so it rebuilds with the new language
+        _navButtons.FirstOrDefault(b => b.IsActive)?.PerformClick();
+    }
+
+    // ── Sidebar footer ────────────────────────────────────────────────────────
 
     private Panel BuildSidebarFooter()
     {
@@ -132,61 +146,76 @@ public class MainForm : Form
             Height = 18,
             TextAlign = ContentAlignment.MiddleLeft
         };
-        var logout = new Button
-        {
-            Text = "Sign out",
-            Dock = DockStyle.Bottom,
-            Height = 30,
-            Cursor = Cursors.Hand,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(51, 65, 85),
-            ForeColor = Color.White,
-            Font = new Font("Segoe UI", 9.5f)
-        };
-        logout.FlatAppearance.BorderSize = 0;
-        logout.FlatAppearance.MouseOverBackColor = Color.FromArgb(71, 85, 105);
-        logout.Click += (_, _) =>
-        {
-            Session.SignOutRequested = true;
-            Close();
-        };
 
-        footer.Controls.Add(logout);
+        _signOutBtn.Text = Loc.T("main.signout");
+        _signOutBtn.Dock = DockStyle.Bottom;
+        _signOutBtn.Height = 30;
+        _signOutBtn.Cursor = Cursors.Hand;
+        _signOutBtn.FlatStyle = FlatStyle.Flat;
+        _signOutBtn.BackColor = Color.FromArgb(51, 65, 85);
+        _signOutBtn.ForeColor = Color.White;
+        _signOutBtn.Font = new Font("Segoe UI", 9.5f);
+        _signOutBtn.FlatAppearance.BorderSize = 0;
+        _signOutBtn.FlatAppearance.MouseOverBackColor = Color.FromArgb(71, 85, 105);
+        _signOutBtn.Click += (_, _) => { Session.SignOutRequested = true; Close(); };
+
+        footer.Controls.Add(_signOutBtn);
         footer.Controls.Add(role);
         footer.Controls.Add(name);
         return footer;
     }
+
+    // ── Top-bar user chip + language toggle ───────────────────────────────────
 
     private Panel BuildUserChip()
     {
         var panel = new Panel
         {
             Dock = DockStyle.Right,
-            Width = 260,
-            BackColor = Theme.Surface,
-            Padding = new Padding(0, 14, 28, 14)
+            Width = 340,
+            BackColor = Theme.Surface
         };
 
-        var label = new Label
-        {
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleRight,
-            Font = Theme.BodyFont,
-            ForeColor = Theme.TextPrimary,
-            Text = $"Signed in as  {Session.DisplayName}"
-        };
-        panel.Controls.Add(label);
+        // Language toggle button — absolute positioned, vertically centred
+        _langBtn.Text = Loc.Current.ToUpper();
+        _langBtn.Width = 52;
+        _langBtn.Height = 32;
+        _langBtn.Top = (70 - 32) / 2;
+        _langBtn.Left = 340 - 52 - 28;
+        _langBtn.Font = new Font("Segoe UI Semibold", 9f);
+        _langBtn.Cursor = Cursors.Hand;
+        _langBtn.FlatStyle = FlatStyle.Flat;
+        _langBtn.BackColor = Theme.Background;
+        _langBtn.ForeColor = Theme.TextPrimary;
+        _langBtn.FlatAppearance.BorderSize = 1;
+        _langBtn.FlatAppearance.BorderColor = Theme.Border;
+        _langBtn.FlatAppearance.MouseOverBackColor = Theme.Border;
+        _langBtn.Click += (_, _) => Loc.SetLanguage(Loc.Current == "en" ? "ro" : "en");
+
+        // "Signed in as  Username" label — fills the chip, leaves room for the button
+        _userChipLbl.Dock = DockStyle.Fill;
+        _userChipLbl.TextAlign = ContentAlignment.MiddleRight;
+        _userChipLbl.Font = Theme.BodyFont;
+        _userChipLbl.ForeColor = Theme.TextPrimary;
+        _userChipLbl.Text = $"{Loc.T("main.signedin")}  {Session.DisplayName}";
+        _userChipLbl.Padding = new Padding(0, 0, 72, 0); // don't overlap langBtn
+
+        panel.Controls.Add(_userChipLbl);
+        panel.Controls.Add(_langBtn);
         return panel;
     }
 
-    private void AddNavButton(string label, string title, Func<UserControl> factory)
+    // ── Navigation ────────────────────────────────────────────────────────────
+
+    private void AddNavButton(string labelKey, string titleKey, Func<UserControl> factory)
     {
-        var btn = new NavButton(label);
+        var btn = new NavButton(labelKey, titleKey);
         btn.Click += (_, _) =>
         {
             foreach (var b in _navButtons) b.IsActive = false;
             btn.IsActive = true;
-            _titleLabel.Text = title;
+            _activeTitleKey = titleKey;
+            _titleLabel.Text = Loc.T(titleKey);
             SwapView(factory());
         };
         _navButtons.Add(btn);
@@ -207,13 +236,18 @@ public class MainForm : Form
         _content.ResumeLayout();
     }
 
+    // ── NavButton ─────────────────────────────────────────────────────────────
+
     private sealed class NavButton : Button
     {
+        public string LabelKey { get; }
+        public string TitleKey { get; }
         private bool _active;
 
-        public NavButton(string text)
+        public NavButton(string labelKey, string titleKey)
         {
-            Text = "  " + text;
+            LabelKey = labelKey;
+            TitleKey = titleKey;
             Width = 216;
             Height = 42;
             Margin = new Padding(0, 4, 0, 0);
@@ -225,7 +259,11 @@ public class MainForm : Form
             ForeColor = Theme.SidebarText;
             BackColor = Theme.Sidebar;
             FlatAppearance.MouseOverBackColor = Theme.SidebarHover;
+            UpdateLabel();
         }
+
+        /// <summary>Re-reads the translation for this button's label key.</summary>
+        public void UpdateLabel() => Text = "  " + Loc.T(LabelKey);
 
         public bool IsActive
         {
