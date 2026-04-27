@@ -68,5 +68,28 @@
   `MinimumSize`/`MaximumSize` locking height at 36 px, so button text is
   never clipped regardless of label length.
 
+### Phase 6: Text-to-Speech module (2026-04-27)
+- Added `System.Speech` 8.0.0 NuGet package.
+- **`TextToSpeechControl`** — full TTS panel wired as a "Text to Speech" nav
+  item in MainForm:
+  - Multiline text editor with placeholder text; accepts Return key.
+  - **Play** (`SpeakAsync`) — async so the UI stays responsive.
+  - **Pause** / **Resume** — via `SpeechSynthesizer.Pause()` / `.Resume()`.
+  - **Stop** — resumes a paused synth first, then `SpeakAsyncCancelAll()`.
+  - **Load from File** — `OpenFileDialog` filtered to `.txt`; loads with
+    `File.ReadAllText`; try/catch for locked or missing files.
+  - **Save to WAV** — `SaveFileDialog`; redirects output with
+    `SetOutputToWaveFile`, synthesizes synchronously, then restores the
+    default audio device; output is always restored even on error.
+  - **Speed slider** (TrackBar, −10 to +10) — live-updates `synth.Rate`.
+  - **Volume slider** (TrackBar, 0 to 100) — live-updates `synth.Volume`.
+  - Status label reflects current state (Idle / Speaking… / Paused) with
+    color feedback using `Theme.Primary` and `Theme.TextSecondary`.
+  - Button enable/disable state enforces valid action sequences.
+  - `Dispose` stops speech and cleans up the `SpeechSynthesizer` when the
+    tab is switched or the app closes.
+  - `SpeakCompleted` handler guards against post-dispose invocation with
+    `IsDisposed` / `IsHandleCreated` checks before `BeginInvoke`.
+
 ### Build
 - `dotnet build`: 0 warnings, 0 errors.
