@@ -101,8 +101,7 @@ public class MainForm : Form
         AddNavButton("Reports", "Reports & Export", () => new ReportsControl());
         AddNavButton("Text to Speech", "Text to Speech", () => new TextToSpeechControl());
 
-        if (_navButtons.Count > 0)
-            _navButtons[0].PerformClick();
+        Load += (_, _) => _navButtons[0].PerformClick();
     }
 
     private Panel BuildSidebarFooter()
