@@ -371,13 +371,15 @@ internal sealed class ScheduleEditorDialog : Form
             Dock = DockStyle.Top,
             Height = 62,
             ColumnCount = 2,
+            RowCount = 1,
             BackColor = Theme.Surface
         };
         times.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         times.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        times.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         var startCol = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Surface };
-        _startTime.Dock = DockStyle.Bottom; _startTime.Height = 30;
+        _startTime.Dock = DockStyle.Top; _startTime.Height = 30;
         startCol.Controls.Add(_startTime);
         startCol.Controls.Add(FieldLabel(Loc.T("schedule.editor.starttime")));
 
