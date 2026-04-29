@@ -400,7 +400,7 @@ internal sealed class GradeEditorDialog : Form
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false; MinimizeBox = false;
-        Size = new Size(480, 460);
+        Size = new Size(480, 520);
         BackColor = Theme.Surface;
         Font = Theme.BodyFont;
 
@@ -431,9 +431,9 @@ internal sealed class GradeEditorDialog : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            Padding = new Padding(24, 16, 24, 4),
+            Padding = new Padding(24, 16, 24, 16),
             BackColor = Theme.Surface,
-            AutoScroll = false
+            AutoScroll = true
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
