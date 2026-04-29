@@ -72,9 +72,12 @@
   "dashboard.card.recentreg.sub.plural": "Latest {0} students",
   "dashboard.students.empty": "No students registered yet. Add some from the Enrollment Center.",
 
-  "schedule.hint": "Click a slot to select. Double-click to edit. Courses run 1h30.",
+  "schedule.hint": "Click a slot to select. Double-click to edit. Click empty space to add at that time.",
   "schedule.btn.add": "Add Time Slot",
   "schedule.btn.manage_rooms": "Manage Rooms",
+  "schedule.cal.prev": "Prev Week",
+  "schedule.cal.next": "Next Week",
+  "schedule.cal.today": "Today",
   "schedule.delete.confirm": "Delete this slot?\n\n{0}\n{1} {2}–{3}",
   "schedule.delete.title": "Confirm delete",
   "schedule.editor.title.new": "Add Time Slot",

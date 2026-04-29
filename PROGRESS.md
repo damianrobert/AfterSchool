@@ -153,3 +153,58 @@
 
 ### Build
 - `dotnet build`: 0 warnings, 0 errors.
+
+---
+
+## 2026-04-29 — Calendar View for Schedule Planner
+
+Replaced the static 6-column card layout with a proper **weekly calendar grid**:
+
+**Visual layout**
+- Vertical time axis (07:00–21:00) on the left, one column per weekday (Mon–Sat).
+- Hour lines and half-hour dashed lines drawn via `Paint` events.
+- Today's column highlighted with a faint blue tint and a solid accent bar under its header.
+- Day headers show the translated weekday name + actual calendar date ("28 Apr").
+- Slot cards are **absolutely positioned** by time: `top = (startMin − 420) × 1.2 px`,
+  `height = durationMin × 1.2 px`. Shows time, course name, and teacher/room (if card tall enough).
+
+**Week navigation**
+- "‹ Prev Week" / "Next Week ›" buttons shift the display by 7 days.
+- "Today" button jumps back to the current week.
+- Week label in the nav bar shows the date range ("28 Apr – 2 May 2026").
+- The underlying schedule data is still day-of-week based; navigation updates the
+  displayed dates without touching the DB.
+
+**Click-to-add**
+- Clicking on empty space in a day column opens `ScheduleEditorDialog` pre-filled
+  with that day and the snapped (nearest 30-min) start time.
+- `ScheduleEditorDialog` constructor now accepts optional `prefilledDay` and
+  `prefilledStartTime` parameters.
+
+**Translations**
+- Added `schedule.cal.prev`, `schedule.cal.next`, `schedule.cal.today` to both
+  `en.json` and `ro.json`.
+- Updated `schedule.hint` to mention the click-to-add gesture.
+
+**Build**: `dotnet build`: 0 warnings, 0 errors.
+
+---
+
+## 2026-04-29 — Bug Fix: Schedule Planner start-time ComboBox unresponsive
+
+**Root cause** — In `ScheduleEditorDialog.BuildLayout`, the `_startTime` ComboBox
+was docked with `DockStyle.Bottom` inside `startCol` (a `Fill`-docked Panel living
+inside the `times` TableLayoutPanel). Without explicit `RowCount`/`RowStyles` on
+the `times` TLP, the row height was indeterminate, which starved the bottom-docked
+ComboBox of space and made it unclickable.
+
+**Fix**
+- Changed `_startTime.Dock` from `DockStyle.Bottom` → `DockStyle.Top`, matching
+  the layout pattern used by every other control in the dialog.
+- Added `RowCount = 1` and an explicit `RowStyle(SizeType.Percent, 100)` to the
+  `times` TableLayoutPanel so its single row reliably fills the full 62 px height.
+
+**Result** — Start-time dropdown is now fully selectable; end time auto-updates
+correctly on selection change.
+
+- `dotnet build`: 0 warnings, 0 errors.
