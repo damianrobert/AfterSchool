@@ -78,6 +78,7 @@
   "schedule.cal.prev": "Săpt. anterioară",
   "schedule.cal.next": "Săpt. următoare",
   "schedule.cal.today": "Azi",
+  "schedule.cal.pick": "Mergi la dată",
   "schedule.delete.confirm": "Ștergeți acest interval?\n\n{0}\n{1} {2}–{3}",
   "schedule.delete.title": "Confirmare ștergere",
   "schedule.editor.title.new": "Adaugă interval",

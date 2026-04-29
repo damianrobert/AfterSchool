@@ -78,6 +78,7 @@
   "schedule.cal.prev": "Prev Week",
   "schedule.cal.next": "Next Week",
   "schedule.cal.today": "Today",
+  "schedule.cal.pick": "Go to date",
   "schedule.delete.confirm": "Delete this slot?\n\n{0}\n{1} {2}–{3}",
   "schedule.delete.title": "Confirm delete",
   "schedule.editor.title.new": "Add Time Slot",

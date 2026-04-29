@@ -28,6 +28,7 @@ public class SchedulePlannerControl : UserControl
     private readonly Button _prevBtn    = new();
     private readonly Button _nextBtn    = new();
     private readonly Button _todayBtn   = new();
+    private readonly Button _pickBtn    = new();
     private readonly Button _newBtn     = new();
     private readonly Button _editBtn    = new();
     private readonly Button _deleteBtn  = new();
@@ -98,11 +99,14 @@ public class SchedulePlannerControl : UserControl
         _prevBtn.Text  = "‹  " + Loc.T("schedule.cal.prev");
         _nextBtn.Text  = Loc.T("schedule.cal.next") + "  ›";
         _todayBtn.Text = Loc.T("schedule.cal.today");
+        _pickBtn.Text  = "📅  " + Loc.T("schedule.cal.pick");
         Theme.StyleButton(_prevBtn);
         Theme.StyleButton(_nextBtn);
         Theme.StyleButton(_todayBtn);
+        Theme.StyleButton(_pickBtn);
         _prevBtn.Dock  = DockStyle.Left;
         _todayBtn.Dock = DockStyle.Left;
+        _pickBtn.Dock  = DockStyle.Left;
         _nextBtn.Dock  = DockStyle.Right;
 
         _weekLabel.Font      = new Font("Segoe UI Semibold", 10.5f);
@@ -118,10 +122,12 @@ public class SchedulePlannerControl : UserControl
             UpdateWeekLabel();
             ReloadSlots();
         };
+        _pickBtn.Click += (_, _) => ShowCalendarPicker();
 
-        // Add in reverse so docking order is: prevBtn (left), todayBtn (left), weekLabel (fill), nextBtn (right)
+        // Add in reverse so docking order is: prevBtn, todayBtn, pickBtn (left), weekLabel (fill), nextBtn (right)
         navBar.Controls.Add(_weekLabel);
         navBar.Controls.Add(_nextBtn);
+        navBar.Controls.Add(_pickBtn);
         navBar.Controls.Add(_todayBtn);
         navBar.Controls.Add(_prevBtn);
 
@@ -145,6 +151,38 @@ public class SchedulePlannerControl : UserControl
         _weekStart = _weekStart.AddDays(days);
         UpdateWeekLabel();
         ReloadSlots();
+    }
+
+    private void ShowCalendarPicker()
+    {
+        var cal = new MonthCalendar
+        {
+            MaxSelectionCount  = 1,
+            SelectionStart     = _weekStart,
+            SelectionEnd       = _weekStart,
+            ShowToday          = true,
+            ShowTodayCircle    = true,
+            Font               = Theme.BodyFont,
+            BackColor          = Theme.Surface,
+            TitleBackColor     = Theme.Primary,
+            TitleForeColor     = Color.White,
+            TrailingForeColor  = Theme.TextSecondary,
+            ForeColor          = Theme.TextPrimary
+        };
+
+        var host = new ToolStripControlHost(cal) { Padding = Padding.Empty, Margin = Padding.Empty };
+        var popup = new ToolStripDropDown { Padding = Padding.Empty, AutoClose = true };
+        popup.Items.Add(host);
+
+        cal.DateSelected += (_, e) =>
+        {
+            _weekStart = GetMonday(e.Start);
+            UpdateWeekLabel();
+            ReloadSlots();
+            popup.Close();
+        };
+
+        popup.Show(_pickBtn, new Point(0, _pickBtn.Height));
     }
 
     private void UpdateWeekLabel()
