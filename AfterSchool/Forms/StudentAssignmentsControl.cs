@@ -229,8 +229,7 @@ public class StudentAssignmentsControl : UserControl
             {
                 if ((int)_grid.Rows[i].Cells["Id"].Value == a.Id)
                 {
-                    _grid.Rows[i].Selected = true;
-                    _grid.CurrentCell = _grid.Rows[i].Cells[0];
+                    _grid.CurrentCell = _grid.Rows[i].Cells["Title"];
                     break;
                 }
             }
