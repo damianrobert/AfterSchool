@@ -313,6 +313,7 @@
   "student.overview.today": "Cursuri astăzi",
   "student.overview.no_today": "Nu sunt cursuri programate astăzi.",
   "student.schedule.title": "Program săptămânal",
+  "student.schedule.col.course": "Curs",
   "student.schedule.col.day": "Zi",
   "student.schedule.col.start": "Start",
   "student.schedule.col.end": "Sfârșit",

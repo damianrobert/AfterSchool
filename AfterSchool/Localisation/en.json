@@ -313,6 +313,7 @@
   "student.overview.today": "Today's Classes",
   "student.overview.no_today": "No classes scheduled for today.",
   "student.schedule.title": "Weekly Schedule",
+  "student.schedule.col.course": "Course",
   "student.schedule.col.day": "Day",
   "student.schedule.col.start": "Start",
   "student.schedule.col.end": "End",

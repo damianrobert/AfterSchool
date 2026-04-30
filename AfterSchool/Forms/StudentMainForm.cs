@@ -145,8 +145,10 @@ public class StudentMainForm : Form
         };
         var signOut = new Button { Text = Loc.T("main.signout"), Dock = DockStyle.Bottom, Height = 30 };
         Theme.StyleButton(signOut);
+        signOut.BackColor = Color.FromArgb(51, 65, 85);
         signOut.ForeColor = Color.FromArgb(203, 213, 225);
-        signOut.FlatAppearance.MouseOverBackColor = Color.FromArgb(51, 65, 85);
+        signOut.FlatAppearance.BorderSize = 0;
+        signOut.FlatAppearance.MouseOverBackColor = Color.FromArgb(71, 85, 105);
         signOut.Click += (_, _) =>
         {
             Session.SignOutRequested = true;
@@ -420,6 +422,7 @@ internal class StudentScheduleControl : UserControl
             return;
         }
 
+        var courseName = CourseRepository.GetById(student.EnrolledCourseId.Value)?.Name ?? "—";
         var dayOrder = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 
         var rows = slots
@@ -427,20 +430,22 @@ internal class StudentScheduleControl : UserControl
             .ThenBy(s => s.StartTime)
             .Select(s => new
             {
-                Day   = Loc.T($"days.{s.DayOfWeek.ToLower()}"),
-                Start = s.StartTime,
-                End   = s.EndTime,
-                Room  = s.Room
+                Course = courseName,
+                Day    = Loc.T($"days.{s.DayOfWeek.ToLower()}"),
+                Start  = s.StartTime,
+                End    = s.EndTime,
+                Room   = s.Room
             }).ToList();
 
         var grid = new DataGridView { Dock = DockStyle.Fill };
         Theme.StyleGrid(grid);
         grid.DataSource = rows;
 
-        if (grid.Columns["Day"]   is { } dc) dc.HeaderText = Loc.T("student.schedule.col.day");
-        if (grid.Columns["Start"] is { } sc) sc.HeaderText = Loc.T("student.schedule.col.start");
-        if (grid.Columns["End"]   is { } ec) ec.HeaderText = Loc.T("student.schedule.col.end");
-        if (grid.Columns["Room"]  is { } rc) rc.HeaderText = Loc.T("student.schedule.col.room");
+        if (grid.Columns["Course"] is { } co) co.HeaderText = Loc.T("student.schedule.col.course");
+        if (grid.Columns["Day"]    is { } dc) dc.HeaderText = Loc.T("student.schedule.col.day");
+        if (grid.Columns["Start"]  is { } sc) sc.HeaderText = Loc.T("student.schedule.col.start");
+        if (grid.Columns["End"]    is { } ec) ec.HeaderText = Loc.T("student.schedule.col.end");
+        if (grid.Columns["Room"]   is { } rc) rc.HeaderText = Loc.T("student.schedule.col.room");
 
         card.Controls.Add(grid);
         Controls.Add(card);
