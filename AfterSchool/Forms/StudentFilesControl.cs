@@ -94,6 +94,7 @@ public class StudentFilesControl : UserControl
         _grid.Visible = true;
         _grid.DataSource = _files.Select(f => new
         {
+            Icon = (Image)FileIconHelper.Get(f.FileName),
             f.Id,
             Name = f.FileName,
             Size = CourseFileRepository.FormatSize(f.FileSize),
@@ -101,6 +102,13 @@ public class StudentFilesControl : UserControl
             By   = f.UploadedBy
         }).ToList();
 
+        if (_grid.Columns["Icon"] is DataGridViewImageColumn imgCol)
+        {
+            imgCol.HeaderText   = "";
+            imgCol.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            imgCol.Width        = 42;
+            imgCol.ImageLayout  = DataGridViewImageCellLayout.Zoom;
+        }
         if (_grid.Columns["Id"]   is { } ic) ic.Visible = false;
         if (_grid.Columns["Name"] is { } nc) nc.HeaderText = Loc.T("files.col.name");
         if (_grid.Columns["Size"] is { } sc) { sc.HeaderText = Loc.T("files.col.size"); sc.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; sc.Width = 90; }
