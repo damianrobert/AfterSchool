@@ -104,11 +104,38 @@ public static class DatabaseHelper
                 FOREIGN KEY (CourseId) REFERENCES Courses(Id) ON DELETE CASCADE
             );
 
-            CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId        ON Schedule(CourseId);
-            CREATE INDEX IF NOT EXISTS IX_Students_EnrolledCourseId ON Students(EnrolledCourseId);
-            CREATE INDEX IF NOT EXISTS IX_Grades_CourseId           ON Grades(CourseId);
-            CREATE INDEX IF NOT EXISTS IX_Grades_StudentId          ON Grades(StudentId);
-            CREATE INDEX IF NOT EXISTS IX_CourseFiles_CourseId      ON CourseFiles(CourseId);
+            CREATE TABLE IF NOT EXISTS Assignments (
+                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                CourseId    INTEGER NOT NULL,
+                Title       TEXT    NOT NULL,
+                Description TEXT    NOT NULL DEFAULT '',
+                DueDate     TEXT    NOT NULL DEFAULT '',
+                CreatedBy   TEXT    NOT NULL DEFAULT '',
+                CreatedDate TEXT    NOT NULL DEFAULT '',
+                FOREIGN KEY (CourseId) REFERENCES Courses(Id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS AssignmentSubmissions (
+                Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                AssignmentId  INTEGER NOT NULL,
+                StudentId     INTEGER NOT NULL,
+                FileName      TEXT    NOT NULL,
+                StoredName    TEXT    NOT NULL,
+                FileSize      INTEGER NOT NULL DEFAULT 0,
+                SubmittedDate TEXT    NOT NULL DEFAULT '',
+                UNIQUE(AssignmentId, StudentId),
+                FOREIGN KEY (AssignmentId) REFERENCES Assignments(Id) ON DELETE CASCADE,
+                FOREIGN KEY (StudentId)    REFERENCES Students(Id)    ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId              ON Schedule(CourseId);
+            CREATE INDEX IF NOT EXISTS IX_Students_EnrolledCourseId      ON Students(EnrolledCourseId);
+            CREATE INDEX IF NOT EXISTS IX_Grades_CourseId                ON Grades(CourseId);
+            CREATE INDEX IF NOT EXISTS IX_Grades_StudentId               ON Grades(StudentId);
+            CREATE INDEX IF NOT EXISTS IX_CourseFiles_CourseId           ON CourseFiles(CourseId);
+            CREATE INDEX IF NOT EXISTS IX_Assignments_CourseId           ON Assignments(CourseId);
+            CREATE INDEX IF NOT EXISTS IX_AssignmentSubmissions_AsgId    ON AssignmentSubmissions(AssignmentId);
+            CREATE INDEX IF NOT EXISTS IX_AssignmentSubmissions_StdId    ON AssignmentSubmissions(StudentId);
         ";
         cmd.ExecuteNonQuery();
 
