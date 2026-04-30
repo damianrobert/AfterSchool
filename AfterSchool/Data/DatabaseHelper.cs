@@ -93,10 +93,22 @@ public static class DatabaseHelper
                 FOREIGN KEY (CourseId)  REFERENCES Courses(Id)  ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS CourseFiles (
+                Id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                CourseId     INTEGER NOT NULL,
+                FileName     TEXT    NOT NULL,
+                StoredName   TEXT    NOT NULL,
+                FileSize     INTEGER NOT NULL DEFAULT 0,
+                UploadedBy   TEXT    NOT NULL DEFAULT '',
+                UploadedDate TEXT    NOT NULL DEFAULT '',
+                FOREIGN KEY (CourseId) REFERENCES Courses(Id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId        ON Schedule(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Students_EnrolledCourseId ON Students(EnrolledCourseId);
             CREATE INDEX IF NOT EXISTS IX_Grades_CourseId           ON Grades(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Grades_StudentId          ON Grades(StudentId);
+            CREATE INDEX IF NOT EXISTS IX_CourseFiles_CourseId      ON CourseFiles(CourseId);
         ";
         cmd.ExecuteNonQuery();
 

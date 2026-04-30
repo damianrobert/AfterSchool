@@ -60,6 +60,7 @@ public class StudentMainForm : Form
             ("nav.student.overview", "nav.student.overview.title", (Func<UserControl>)(() => new StudentOverviewControl())),
             ("nav.student.schedule", "nav.student.schedule.title", (Func<UserControl>)(() => new StudentScheduleControl())),
             ("nav.student.grades",   "nav.student.grades.title",   (Func<UserControl>)(() => new StudentGradesControl())),
+            ("nav.student.files",    "nav.student.files.title",    (Func<UserControl>)(() => new StudentFilesControl())),
         };
 
         foreach (var (labelKey, titleKey, factory) in navDefs)

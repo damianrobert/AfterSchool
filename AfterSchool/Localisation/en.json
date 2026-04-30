@@ -326,5 +326,29 @@
   "student.grades.col.date": "Date",
   "student.grades.col.gradedby": "Graded by",
   "student.grades.no_course": "You are not enrolled in a course.",
-  "student.grades.no_grades": "No grades have been recorded yet."
+  "student.grades.no_grades": "No grades have been recorded yet.",
+
+  "nav.files": "Course Files",
+  "nav.files.title": "Course Files",
+  "files.select_course": "Select a course on the left to view its files.",
+  "files.no_files": "No files have been uploaded for this course yet.",
+  "files.btn.upload": "Upload File",
+  "files.btn.download": "Download",
+  "files.col.name": "File Name",
+  "files.col.size": "Size",
+  "files.col.date": "Uploaded",
+  "files.col.by": "Uploaded by",
+  "files.delete.confirm": "Delete \"{0}\"?",
+  "files.delete.title": "Confirm delete",
+  "files.upload.title": "Select file to upload",
+  "files.upload.filter": "All files (*.*)|*.*",
+  "files.upload.error": "Could not upload file:\n\n{0}",
+  "files.download.title": "Save file",
+  "files.download.error": "Could not save file:\n\n{0}",
+
+  "nav.student.files": "Course Files",
+  "nav.student.files.title": "Course Files",
+  "student.files.no_course": "You are not enrolled in a course.",
+  "student.files.no_files": "No files have been uploaded for your course yet.",
+  "student.files.btn.download": "Download"
 }

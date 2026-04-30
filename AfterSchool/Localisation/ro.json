@@ -326,5 +326,29 @@
   "student.grades.col.date": "Data",
   "student.grades.col.gradedby": "Notat de",
   "student.grades.no_course": "Nu ești înscris la niciun curs.",
-  "student.grades.no_grades": "Nu au fost înregistrate note încă."
+  "student.grades.no_grades": "Nu au fost înregistrate note încă.",
+
+  "nav.files": "Fișiere cursuri",
+  "nav.files.title": "Fișiere cursuri",
+  "files.select_course": "Selectați un curs din stânga pentru a vedea fișierele sale.",
+  "files.no_files": "Nu au fost încărcate fișiere pentru acest curs.",
+  "files.btn.upload": "Încarcă fișier",
+  "files.btn.download": "Descarcă",
+  "files.col.name": "Fișier",
+  "files.col.size": "Dimensiune",
+  "files.col.date": "Încărcat",
+  "files.col.by": "Încărcat de",
+  "files.delete.confirm": "Ștergeți \"{0}\"?",
+  "files.delete.title": "Confirmare ștergere",
+  "files.upload.title": "Selectați fișierul de încărcat",
+  "files.upload.filter": "Toate fișierele (*.*)|*.*",
+  "files.upload.error": "Nu s-a putut încărca fișierul:\n\n{0}",
+  "files.download.title": "Salvează fișierul",
+  "files.download.error": "Nu s-a putut salva fișierul:\n\n{0}",
+
+  "nav.student.files": "Fișierele cursului",
+  "nav.student.files.title": "Fișierele cursului",
+  "student.files.no_course": "Nu ești înscris la niciun curs.",
+  "student.files.no_files": "Nu au fost încărcate fișiere pentru cursul tău.",
+  "student.files.btn.download": "Descarcă"
 }
