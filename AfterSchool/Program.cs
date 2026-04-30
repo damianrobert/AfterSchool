@@ -38,8 +38,22 @@ internal static class Program
                 Session.Current = login.AuthenticatedUser;
             }
 
+            if (Session.Current!.MustChangePassword == 1)
+            {
+                using var changePass = new ChangePasswordForm();
+                if (changePass.ShowDialog() != DialogResult.OK)
+                {
+                    Session.Current = null;
+                    continue;
+                }
+            }
+
             Session.SignOutRequested = false;
-            Application.Run(new MainForm());
+
+            if (Session.Current.Role == "Student")
+                Application.Run(new StudentMainForm());
+            else
+                Application.Run(new MainForm());
 
             if (!Session.SignOutRequested)
                 return;

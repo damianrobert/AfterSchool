@@ -31,9 +31,27 @@ public static class UserRepository
     {
         using var conn = DatabaseHelper.CreateConnection();
         return conn.ExecuteScalar<int>(@"
-            INSERT INTO Users (Username, PasswordHash, FullName, Role, CreatedDate, IsActive)
-            VALUES (@Username, @PasswordHash, @FullName, @Role, @CreatedDate, @IsActive);
+            INSERT INTO Users
+                (Username, PasswordHash, FullName, Role, CreatedDate, IsActive, MustChangePassword, StudentId)
+            VALUES
+                (@Username, @PasswordHash, @FullName, @Role, @CreatedDate, @IsActive, @MustChangePassword, @StudentId);
             SELECT last_insert_rowid();", user);
+    }
+
+    public static void UpdatePassword(int userId, string newPasswordHash)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        conn.Execute(
+            "UPDATE Users SET PasswordHash = @Hash, MustChangePassword = 0 WHERE Id = @Id",
+            new { Hash = newPasswordHash, Id = userId });
+    }
+
+    public static bool HasStudentAccount(int studentId)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        return conn.ExecuteScalar<int>(
+            "SELECT COUNT(*) FROM Users WHERE StudentId = @StudentId",
+            new { StudentId = studentId }) > 0;
     }
 
     public static IEnumerable<User> GetByRole(string role, bool activeOnly = true)

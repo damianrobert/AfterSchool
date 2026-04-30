@@ -14,6 +14,7 @@ public class EnrollmentControl : UserControl
     private readonly Button _editBtn = new();
     private readonly Button _transferBtn = new();
     private readonly Button _deleteBtn = new();
+    private readonly Button _accountBtn = new();
 
     private List<StudentView> _students = new();
 
@@ -26,10 +27,12 @@ public class EnrollmentControl : UserControl
 
     private void BuildLayout()
     {
-        _newBtn.Text = Loc.T("enrollment.btn.new");
-        _editBtn.Text = Loc.T("common.edit");
+        _newBtn.Text      = Loc.T("enrollment.btn.new");
+        _editBtn.Text     = Loc.T("common.edit");
         _transferBtn.Text = Loc.T("common.transfer");
-        _deleteBtn.Text = Loc.T("common.delete");
+        _deleteBtn.Text   = Loc.T("common.delete");
+        _accountBtn.Text  = Loc.T("enrollment.btn.create_account");
+        _accountBtn.Visible = Session.Current?.Role == "Administrator";
 
         var card = new Panel
         {
@@ -62,17 +65,19 @@ public class EnrollmentControl : UserControl
         Theme.StyleButton(_editBtn);
         Theme.StyleButton(_transferBtn);
         Theme.StyleButton(_deleteBtn, danger: true);
+        Theme.StyleButton(_accountBtn);
 
-        _newBtn.Click += (_, _) => OpenEditor(null);
-        _editBtn.Click += (_, _) => EditSelected();
+        _newBtn.Click     += (_, _) => OpenEditor(null);
+        _editBtn.Click    += (_, _) => EditSelected();
         _transferBtn.Click += (_, _) => TransferSelected();
-        _deleteBtn.Click += (_, _) => DeleteSelected();
+        _deleteBtn.Click  += (_, _) => DeleteSelected();
+        _accountBtn.Click += (_, _) => CreateAccountForSelected();
 
         var buttons = new FlowLayoutPanel
         {
             Dock = DockStyle.Right,
             FlowDirection = FlowDirection.RightToLeft,
-            Width = 500,
+            Width = 620,
             Height = 52,
             BackColor = Theme.Surface
         };
@@ -80,6 +85,7 @@ public class EnrollmentControl : UserControl
         buttons.Controls.Add(_transferBtn);
         buttons.Controls.Add(_editBtn);
         buttons.Controls.Add(_newBtn);
+        buttons.Controls.Add(_accountBtn);
 
         toolbar.Controls.Add(_searchBox);
         toolbar.Controls.Add(_courseFilter);
@@ -194,6 +200,24 @@ public class EnrollmentControl : UserControl
         Student? model = existing == null ? null : StudentRepository.GetById(existing.Id);
         using var dlg = new StudentEditorDialog(model);
         if (dlg.ShowDialog(this) == DialogResult.OK) LoadStudents();
+    }
+
+    private void CreateAccountForSelected()
+    {
+        var s = SelectedStudent();
+        if (s == null) return;
+
+        if (UserRepository.HasStudentAccount(s.Id))
+        {
+            MessageBox.Show(this,
+                Loc.T("enrollment.account.already_exists"),
+                Loc.T("enrollment.account.dialog.title"),
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        using var dlg = new CreateStudentAccountDialog(s);
+        dlg.ShowDialog(this);
     }
 
     private sealed record CourseFilterItem(int? CourseId, string Label)
@@ -467,5 +491,166 @@ internal sealed class TransferDialog : Form
         Controls.Add(buttons);
         AcceptButton = ok;
         CancelButton = cancel;
+    }
+}
+
+internal sealed class CreateStudentAccountDialog : Form
+{
+    private readonly StudentView _student;
+    private readonly TextBox _username = new();
+    private readonly TextBox _password = new() { UseSystemPasswordChar = true };
+    private readonly TextBox _confirm  = new() { UseSystemPasswordChar = true };
+    private readonly Label   _error    = new();
+
+    public CreateStudentAccountDialog(StudentView student)
+    {
+        _student = student;
+
+        Text = Loc.T("enrollment.account.dialog.title");
+        StartPosition = FormStartPosition.CenterParent;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = false;
+        Size = new Size(480, 460);
+        BackColor = Theme.Surface;
+        Font = Theme.BodyFont;
+
+        BuildLayout();
+    }
+
+    private void BuildLayout()
+    {
+        var root = new Panel { Dock = DockStyle.Fill, Padding = new Padding(32, 28, 32, 20), BackColor = Theme.Surface };
+
+        var heading = new Label
+        {
+            Text = $"{_student.LastName}, {_student.FirstName}",
+            Font = new Font("Segoe UI Semibold", 16f),
+            ForeColor = Theme.TextPrimary,
+            Dock = DockStyle.Top,
+            Height = 36
+        };
+        var sub = new Label
+        {
+            Text = Loc.T("enrollment.account.note"),
+            Font = Theme.BodyFont,
+            ForeColor = Theme.TextSecondary,
+            Dock = DockStyle.Top,
+            Height = 40
+        };
+
+        // Pre-fill username from student name
+        _username.Text = $"{_student.FirstName}.{_student.LastName}"
+                          .ToLowerInvariant()
+                          .Replace(" ", "");
+
+        foreach (var tb in new[] { _username, _password, _confirm })
+        {
+            Theme.StyleTextBox(tb);
+            tb.Font = new Font("Segoe UI", 10.5f);
+            tb.Dock = DockStyle.Top;
+            tb.Height = 32;
+        }
+
+        _error.Dock = DockStyle.Top;
+        _error.Height = 26;
+        _error.ForeColor = Theme.Danger;
+        _error.Font = Theme.SmallFont;
+        _error.TextAlign = ContentAlignment.MiddleLeft;
+
+        var createBtn = new Button { Text = Loc.T("common.create"), Dock = DockStyle.Top, Height = 40 };
+        var cancelBtn = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel, Dock = DockStyle.Bottom, Height = 36 };
+        Theme.StyleButton(createBtn, primary: true);
+        Theme.StyleButton(cancelBtn);
+        createBtn.Font = new Font("Segoe UI Semibold", 10.5f);
+        createBtn.Click += (_, _) => TryCreate();
+
+        root.Controls.Add(Spacer(8));
+        root.Controls.Add(cancelBtn);
+        root.Controls.Add(Spacer(6));
+        root.Controls.Add(createBtn);
+        root.Controls.Add(Spacer(6));
+        root.Controls.Add(_error);
+        root.Controls.Add(_confirm);
+        root.Controls.Add(FieldLabel(Loc.T("enrollment.account.field.confirm")));
+        root.Controls.Add(Spacer(8));
+        root.Controls.Add(_password);
+        root.Controls.Add(FieldLabel(Loc.T("enrollment.account.field.password")));
+        root.Controls.Add(Spacer(8));
+        root.Controls.Add(_username);
+        root.Controls.Add(FieldLabel(Loc.T("enrollment.account.field.username")));
+        root.Controls.Add(Spacer(14));
+        root.Controls.Add(sub);
+        root.Controls.Add(heading);
+
+        Controls.Add(root);
+        AcceptButton = createBtn;
+        CancelButton = cancelBtn;
+    }
+
+    private static Label FieldLabel(string text) => new()
+    {
+        Text = text,
+        Font = new Font("Segoe UI Semibold", 9.5f),
+        ForeColor = Theme.TextSecondary,
+        Dock = DockStyle.Top,
+        Height = 22,
+        TextAlign = ContentAlignment.BottomLeft
+    };
+
+    private static Panel Spacer(int h) =>
+        new() { Dock = DockStyle.Top, Height = h, BackColor = Theme.Surface };
+
+    private void TryCreate()
+    {
+        _error.Text = "";
+        var username = _username.Text.Trim();
+        var password = _password.Text;
+        var confirm  = _confirm.Text;
+
+        if (username.Length < 3)
+        {
+            _error.Text = Loc.T("enrollment.account.validation.username");
+            return;
+        }
+        if (password.Length < 6)
+        {
+            _error.Text = Loc.T("enrollment.account.validation.password");
+            return;
+        }
+        if (password != confirm)
+        {
+            _error.Text = Loc.T("enrollment.account.validation.match");
+            _confirm.Clear();
+            _confirm.Focus();
+            return;
+        }
+        if (UserRepository.UsernameExists(username))
+        {
+            _error.Text = Loc.T("enrollment.account.validation.taken");
+            _username.Focus();
+            return;
+        }
+
+        var user = new AfterSchool.Models.User
+        {
+            Username           = username,
+            PasswordHash       = PasswordHasher.Hash(password),
+            FullName           = $"{_student.FirstName} {_student.LastName}",
+            Role               = "Student",
+            CreatedDate        = DateTime.Today.ToString("yyyy-MM-dd"),
+            IsActive           = 1,
+            MustChangePassword = 1,
+            StudentId          = _student.Id
+        };
+        UserRepository.Insert(user);
+
+        MessageBox.Show(
+            string.Format(Loc.T("enrollment.account.created"), username),
+            Loc.T("enrollment.account.created.title"),
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+        DialogResult = DialogResult.OK;
+        Close();
     }
 }

@@ -106,10 +106,17 @@ public static class DatabaseHelper
 
     private static void MigrateSchema(SqliteConnection conn)
     {
+        TryAlter(conn, "ALTER TABLE Courses ADD COLUMN GradingScale TEXT NOT NULL DEFAULT 'Numeric';");
+        TryAlter(conn, "ALTER TABLE Users ADD COLUMN MustChangePassword INTEGER NOT NULL DEFAULT 0;");
+        TryAlter(conn, "ALTER TABLE Users ADD COLUMN StudentId INTEGER REFERENCES Students(Id) ON DELETE SET NULL;");
+    }
+
+    private static void TryAlter(SqliteConnection conn, string sql)
+    {
         try
         {
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "ALTER TABLE Courses ADD COLUMN GradingScale TEXT NOT NULL DEFAULT 'Numeric';";
+            cmd.CommandText = sql;
             cmd.ExecuteNonQuery();
         }
         catch { /* column already exists */ }

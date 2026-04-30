@@ -9,4 +9,6 @@ public class User
     public string Role { get; set; } = "Staff";
     public string CreatedDate { get; set; } = string.Empty;
     public int IsActive { get; set; } = 1;
+    public int MustChangePassword { get; set; } = 0;
+    public int? StudentId { get; set; }
 }
