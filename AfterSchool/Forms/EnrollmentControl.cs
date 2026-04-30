@@ -48,38 +48,54 @@ public class EnrollmentControl : UserControl
 
         var toolbar = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.Surface };
 
+        // Left side: search + course filter in a docked fill panel
+        var leftPanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = Theme.Surface,
+            Padding = new Padding(0, 9, 0, 9)
+        };
+
         _searchBox.PlaceholderText = Loc.T("enrollment.search");
-        _searchBox.Width = 260;
-        _searchBox.Left = 0;
-        _searchBox.Top = 10;
+        _searchBox.Width = 240;
+        _searchBox.Height = 32;
+        _searchBox.Margin = new Padding(0, 1, 8, 1);
         Theme.StyleTextBox(_searchBox);
         _searchBox.TextChanged += (_, _) => ApplyFilter();
 
-        _courseFilter.Width = 220;
-        _courseFilter.Left = 272;
-        _courseFilter.Top = 10;
+        _courseFilter.Width = 200;
+        _courseFilter.Height = 32;
+        _courseFilter.Margin = new Padding(0, 1, 0, 1);
         _courseFilter.Font = Theme.BodyFont;
         _courseFilter.SelectedIndexChanged += (_, _) => ApplyFilter();
 
+        leftPanel.Controls.Add(_searchBox);
+        leftPanel.Controls.Add(_courseFilter);
+
+        // Right side: action buttons
         Theme.StyleButton(_newBtn, primary: true);
         Theme.StyleButton(_editBtn);
         Theme.StyleButton(_transferBtn);
         Theme.StyleButton(_deleteBtn, danger: true);
         Theme.StyleButton(_accountBtn);
 
-        _newBtn.Click     += (_, _) => OpenEditor(null);
-        _editBtn.Click    += (_, _) => EditSelected();
+        _newBtn.Click      += (_, _) => OpenEditor(null);
+        _editBtn.Click     += (_, _) => EditSelected();
         _transferBtn.Click += (_, _) => TransferSelected();
-        _deleteBtn.Click  += (_, _) => DeleteSelected();
-        _accountBtn.Click += (_, _) => CreateAccountForSelected();
+        _deleteBtn.Click   += (_, _) => DeleteSelected();
+        _accountBtn.Click  += (_, _) => CreateAccountForSelected();
 
         var buttons = new FlowLayoutPanel
         {
             Dock = DockStyle.Right,
             FlowDirection = FlowDirection.RightToLeft,
-            Width = 620,
-            Height = 52,
-            BackColor = Theme.Surface
+            WrapContents = false,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = Theme.Surface,
+            Padding = new Padding(0, 8, 0, 8)
         };
         buttons.Controls.Add(_deleteBtn);
         buttons.Controls.Add(_transferBtn);
@@ -87,8 +103,8 @@ public class EnrollmentControl : UserControl
         buttons.Controls.Add(_newBtn);
         buttons.Controls.Add(_accountBtn);
 
-        toolbar.Controls.Add(_searchBox);
-        toolbar.Controls.Add(_courseFilter);
+        // Add Fill panel first, Right panel last — WinForms docks last-added first
+        toolbar.Controls.Add(leftPanel);
         toolbar.Controls.Add(buttons);
 
         Theme.StyleGrid(_grid);
