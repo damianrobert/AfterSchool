@@ -6,8 +6,11 @@ public static class DatabaseHelper
 {
     private const string DbFileName = "afterschool.db";
 
+    private static string ExeDirectory =>
+        Path.GetDirectoryName(Environment.ProcessPath) ?? AppDomain.CurrentDomain.BaseDirectory;
+
     public static string DatabasePath =>
-        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DbFileName);
+        Path.Combine(ExeDirectory, DbFileName);
 
     public static string ConnectionString =>
         new SqliteConnectionStringBuilder
@@ -146,6 +149,26 @@ public static class DatabaseHelper
             CREATE INDEX IF NOT EXISTS IX_Assignments_CourseId           ON Assignments(CourseId);
             CREATE INDEX IF NOT EXISTS IX_AssignmentSubmissions_AsgId    ON AssignmentSubmissions(AssignmentId);
             CREATE INDEX IF NOT EXISTS IX_AssignmentSubmissions_StdId    ON AssignmentSubmissions(StudentId);
+
+            CREATE TABLE IF NOT EXISTS ChatConversations (
+                Id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId          INTEGER NOT NULL,
+                Title           TEXT    NOT NULL DEFAULT 'New Chat',
+                CreatedDate     TEXT    NOT NULL DEFAULT '',
+                LastMessageDate TEXT    NOT NULL DEFAULT ''
+            );
+
+            CREATE TABLE IF NOT EXISTS ChatMessages (
+                Id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                ConversationId INTEGER NOT NULL,
+                Role           TEXT    NOT NULL DEFAULT 'user',
+                Content        TEXT    NOT NULL DEFAULT '',
+                SentDate       TEXT    NOT NULL DEFAULT '',
+                FOREIGN KEY (ConversationId) REFERENCES ChatConversations(Id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_ChatConversations_UserId   ON ChatConversations(UserId);
+            CREATE INDEX IF NOT EXISTS IX_ChatMessages_ConvId        ON ChatMessages(ConversationId);
         ";
         cmd.ExecuteNonQuery();
 

@@ -93,6 +93,7 @@ public class MainForm : Form
         AddNavButton("nav.files",        "nav.files.title",       () => new CourseFilesControl());
         AddNavButton("nav.reports",   "nav.reports.title",   () => new ReportsControl());
         AddNavButton("nav.tts",       "nav.tts.title",       () => new TextToSpeechControl());
+        AddNavButton("nav.chat",      "nav.chat.title",      () => new ChatControl());
 
         Loc.LanguageChanged += OnLanguageChanged;
         Load += (_, _) => _navButtons[0].PerformClick();

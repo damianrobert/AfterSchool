@@ -16,6 +16,7 @@ internal static class Program
         ApplicationConfiguration.Initialize();
 
         AppSettings.Load();
+        EnvConfig.Load();
         Loc.Init(AppSettings.Language);
 
         try

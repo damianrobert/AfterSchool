@@ -418,5 +418,16 @@
   "student.assignments.btn.resubmit": "Reîncarcă",
   "student.assignments.btn.download": "Răspunsul meu",
   "student.assignments.description": "Descriere",
-  "student.assignments.no_description": "Nicio descriere furnizată."
+  "student.assignments.no_description": "Nicio descriere furnizată.",
+
+  "nav.chat": "Milo AI",
+  "nav.chat.title": "Milo — Asistent AI",
+  "chat.no_conversation": "Selectează o conversație sau începe una nouă",
+  "chat.no_history": "Nicio conversație anterioară",
+  "chat.input.placeholder": "Întreabă-l pe Milo orice…",
+  "chat.btn.send": "Trimite",
+  "chat.btn.delete": "Șterge",
+  "chat.typing": "Milo se gândește…",
+  "chat.delete.confirm": "Ștergi această conversație?",
+  "chat.delete.title": "Confirmare ștergere"
 }

@@ -418,5 +418,16 @@
   "student.assignments.btn.resubmit": "Re-submit",
   "student.assignments.btn.download": "My Submission",
   "student.assignments.description": "Description",
-  "student.assignments.no_description": "No description provided."
+  "student.assignments.no_description": "No description provided.",
+
+  "nav.chat": "Milo AI",
+  "nav.chat.title": "Milo — AI Assistant",
+  "chat.no_conversation": "Select a chat or start a new one",
+  "chat.no_history": "No previous chats",
+  "chat.input.placeholder": "Ask Milo anything…",
+  "chat.btn.send": "Send",
+  "chat.btn.delete": "Delete",
+  "chat.typing": "Milo is thinking…",
+  "chat.delete.confirm": "Delete this conversation?",
+  "chat.delete.title": "Confirm delete"
 }
