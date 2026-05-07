@@ -9,7 +9,7 @@ namespace AfterSchool.Services;
 public static class MiloService
 {
     private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
-    private const string GeminiModel = "gemini-2.0-flash";
+    private const string GeminiModel = "gemini-2.5-flash-preview-04-17";
 
     private const string SystemPromptTemplate = @"You are Milo, a friendly and professional AI assistant embedded in an afterschool management system. You help both students and administrative staff.
 
