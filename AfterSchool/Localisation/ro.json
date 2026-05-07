@@ -348,8 +348,13 @@
 
   "nav.student.files": "Fișierele cursului",
   "nav.student.files.title": "Fișierele cursului",
+  "student.files.heading": "Materiale de curs",
+  "student.files.subheading": "Apasă pe un curs pentru a vedea fișierele.",
+  "student.files.back": "← Înapoi la cursuri",
+  "student.files.count.one": "1 fișier",
+  "student.files.count.many": "{0} fișiere",
   "student.files.no_course": "Nu ești înscris la niciun curs.",
-  "student.files.no_files": "Nu au fost încărcate fișiere pentru cursul tău.",
+  "student.files.no_files": "Nu au fost încărcate fișiere pentru acest curs.",
   "student.files.btn.download": "Descarcă",
 
   "nav.assignments": "Teme",

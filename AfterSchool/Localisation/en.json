@@ -348,8 +348,13 @@
 
   "nav.student.files": "Course Files",
   "nav.student.files.title": "Course Files",
+  "student.files.heading": "Course Materials",
+  "student.files.subheading": "Click a course to view its files.",
+  "student.files.back": "← Back to Courses",
+  "student.files.count.one": "1 file",
+  "student.files.count.many": "{0} files",
   "student.files.no_course": "You are not enrolled in a course.",
-  "student.files.no_files": "No files have been uploaded for your course yet.",
+  "student.files.no_files": "No files have been uploaded for this course yet.",
   "student.files.btn.download": "Download",
 
   "nav.assignments": "Assignments",
