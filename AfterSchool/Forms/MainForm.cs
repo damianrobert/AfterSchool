@@ -17,6 +17,7 @@ public class MainForm : Form
     private readonly Label _userChipLbl = new();
     private readonly Button _signOutBtn = new();
     private string _activeTitleKey = "nav.dashboard.title";
+    private Bitmap? _langFlag;
 
     public MainForm()
     {
@@ -99,7 +100,11 @@ public class MainForm : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) Loc.LanguageChanged -= OnLanguageChanged;
+        if (disposing)
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+            _langFlag?.Dispose();
+        }
         base.Dispose(disposing);
     }
 
@@ -111,7 +116,7 @@ public class MainForm : Form
         // Update top bar
         _titleLabel.Text = Loc.T(_activeTitleKey);
         _userChipLbl.Text = $"{Loc.T("main.signedin")}  {Session.DisplayName}";
-        _langBtn.Text = Loc.Current.ToUpper();
+        UpdateLangButton();
 
         // Update sidebar footer
         _signOutBtn.Text = Loc.T("main.signout");
@@ -195,16 +200,14 @@ public class MainForm : Form
     {
         var panel = new Panel { Dock = DockStyle.Right, Width = 80, BackColor = Theme.Surface };
 
-        _langBtn.Text = Loc.Current.ToUpper();
-        _langBtn.Width = 52;
-        _langBtn.Height = 32;
-        _langBtn.Left = (80 - 52) / 2;
-        _langBtn.Top = (70 - 32) / 2;
-        _langBtn.Font = new Font("Segoe UI Semibold", 9f);
+        UpdateLangButton();
+        _langBtn.Width = 58;
+        _langBtn.Height = 36;
+        _langBtn.Left = (80 - 58) / 2;
+        _langBtn.Top = (70 - 36) / 2;
         _langBtn.Cursor = Cursors.Hand;
         _langBtn.FlatStyle = FlatStyle.Flat;
         _langBtn.BackColor = Theme.Background;
-        _langBtn.ForeColor = Theme.TextPrimary;
         _langBtn.FlatAppearance.BorderSize = 1;
         _langBtn.FlatAppearance.BorderColor = Theme.Border;
         _langBtn.FlatAppearance.MouseOverBackColor = Theme.Border;
@@ -212,6 +215,83 @@ public class MainForm : Form
 
         panel.Controls.Add(_langBtn);
         return panel;
+    }
+
+    private void UpdateLangButton()
+    {
+        var old = _langFlag;
+        _langFlag = CreateFlagBitmap(Loc.Current);
+        _langBtn.Text = "";
+        _langBtn.Image = _langFlag;
+        _langBtn.ImageAlign = ContentAlignment.MiddleCenter;
+        old?.Dispose();
+    }
+
+    private static Bitmap CreateFlagBitmap(string lang)
+    {
+        const int W = 42, H = 26;
+        var bmp = new Bitmap(W, H);
+        using var g = Graphics.FromImage(bmp);
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+        if (lang == "ro")
+            DrawRomanianFlag(g, W, H);
+        else
+            DrawUnionJack(g, W, H);
+
+        // Thin dark border
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+        using var border = new Pen(Color.FromArgb(90, 0, 0, 0));
+        g.DrawRectangle(border, 0, 0, W - 1, H - 1);
+
+        return bmp;
+    }
+
+    private static void DrawRomanianFlag(Graphics g, int W, int H)
+    {
+        int third = W / 3;
+        using var b = new SolidBrush(Color.FromArgb(0, 43, 127));
+        using var y = new SolidBrush(Color.FromArgb(252, 209, 22));
+        using var r = new SolidBrush(Color.FromArgb(206, 17, 38));
+        g.FillRectangle(b, 0,          0, third,          H);
+        g.FillRectangle(y, third,      0, third,          H);
+        g.FillRectangle(r, third * 2,  0, W - third * 2, H);
+    }
+
+    private static void DrawUnionJack(Graphics g, int W, int H)
+    {
+        var blue = Color.FromArgb(0, 36, 125);
+        var white = Color.White;
+        var red = Color.FromArgb(207, 20, 43);
+
+        // Blue background
+        g.FillRectangle(new SolidBrush(blue), 0, 0, W, H);
+
+        // White diagonals (St Andrew's cross)
+        float diagW = H / 3.5f;
+        using (var wp = new Pen(white, diagW) { LineJoin = System.Drawing.Drawing2D.LineJoin.Miter })
+        {
+            g.DrawLine(wp, 0, 0, W, H);
+            g.DrawLine(wp, W, 0, 0, H);
+        }
+
+        // Red diagonals (St Patrick's cross, simplified — no counterchange offset at this size)
+        float redDiagW = diagW * 0.45f;
+        using (var rp = new Pen(red, redDiagW) { LineJoin = System.Drawing.Drawing2D.LineJoin.Miter })
+        {
+            g.DrawLine(rp, 0, 0, W, H);
+            g.DrawLine(rp, W, 0, 0, H);
+        }
+
+        // White cross
+        float cw = H / 3f;
+        g.FillRectangle(new SolidBrush(white), 0, (H - cw) / 2f, W, cw);
+        g.FillRectangle(new SolidBrush(white), (W - cw) / 2f, 0, cw, H);
+
+        // Red cross (narrower, centred)
+        float rw = cw * 0.55f;
+        g.FillRectangle(new SolidBrush(red), 0, (H - rw) / 2f, W, rw);
+        g.FillRectangle(new SolidBrush(red), (W - rw) / 2f, 0, rw, H);
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
