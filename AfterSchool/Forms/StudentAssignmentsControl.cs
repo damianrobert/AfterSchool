@@ -12,8 +12,11 @@ public class StudentAssignmentsControl : UserControl
     private readonly Button       _downloadBtn = new();
     private readonly Label        _descLabel   = new();
     private readonly Label        _emptyLabel  = new();
+    private readonly Button       _todoBtn     = new();
+    private readonly Button       _doneBtn     = new();
 
     private List<AssignmentStudentView> _assignments = new();
+    private bool _showDone;
     private int? _studentId;
 
     public StudentAssignmentsControl()
@@ -50,6 +53,14 @@ public class StudentAssignmentsControl : UserControl
 
         // Toolbar
         var toolbar = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = Theme.Surface };
+
+        // Toggle buttons (left side)
+        var togglePanel = BuildToggle();
+        togglePanel.Dock = DockStyle.Left;
+        togglePanel.Width = _todoBtn.Width + _doneBtn.Width + 2; // 2 = border + divider
+        toolbar.Controls.Add(togglePanel);
+
+        // Action buttons (right side)
         var btns = new FlowLayoutPanel
         {
             Dock = DockStyle.Right,
@@ -99,6 +110,20 @@ public class StudentAssignmentsControl : UserControl
         _grid.SelectionChanged += (_, _) => OnSelectionChanged(descPanel);
         _grid.CellDoubleClick  += (_, e) => { if (e.RowIndex >= 0) SubmitFile(); };
 
+        // CellFormatting: look up by ID to be filter-safe
+        _grid.CellFormatting += (_, e) =>
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            if (_grid.Columns[e.ColumnIndex].Name != "Status") return;
+            if (_grid.Rows[e.RowIndex].Cells["Id"].Value is not int id) return;
+            var a = _assignments.FirstOrDefault(x => x.Id == id);
+            if (a == null || e.CellStyle == null) return;
+            e.CellStyle.ForeColor = a.IsSubmitted ? Theme.Success
+                                  : a.IsOverdue   ? Theme.Danger
+                                  :                 Theme.TextSecondary;
+            e.CellStyle.Font = new Font("Segoe UI Semibold", 9.5f);
+        };
+
         // Empty label
         _emptyLabel.Dock = DockStyle.Fill;
         _emptyLabel.Font = Theme.BodyFont;
@@ -113,6 +138,73 @@ public class StudentAssignmentsControl : UserControl
         Controls.Add(card);
     }
 
+    private Panel BuildToggle()
+    {
+        _todoBtn.Text = Loc.T("student.assignments.filter.todo");
+        _doneBtn.Text = Loc.T("student.assignments.filter.done");
+
+        foreach (var b in new[] { _todoBtn, _doneBtn })
+        {
+            b.FlatStyle = FlatStyle.Flat;
+            b.FlatAppearance.BorderSize = 0;
+            b.Font = Theme.BodyFont;
+            b.Cursor = Cursors.Hand;
+            b.Dock = DockStyle.Left;
+            b.Height = 30;
+            b.Padding = new Padding(14, 0, 14, 0);
+            b.AutoSize = true;
+            b.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        }
+
+        // Container with a thin border that acts as the segmented control outline
+        var container = new Panel
+        {
+            BackColor = Theme.Border,
+            Padding = new Padding(1),
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Height = 32
+        };
+        // Vertical divider between the two buttons (1px gap via BackColor)
+        var inner = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = Theme.Border // shows as 1px gap between buttons
+        };
+
+        _todoBtn.Click += (_, _) => { _showDone = false; RefreshToggle(); ApplyFilter(); };
+        _doneBtn.Click += (_, _) => { _showDone = true;  RefreshToggle(); ApplyFilter(); };
+
+        inner.Controls.Add(_todoBtn);
+        inner.Controls.Add(_doneBtn);
+        container.Controls.Add(inner);
+
+        RefreshToggle();
+
+        // Vertically center the container inside the toolbar
+        var wrapper = new Panel { BackColor = Theme.Surface, Padding = new Padding(0, 8, 0, 8) };
+        wrapper.Controls.Add(container);
+        container.Top = 0;
+
+        return wrapper;
+    }
+
+    private void RefreshToggle()
+    {
+        // Active tab: primary fill; inactive: plain surface
+        _todoBtn.BackColor = !_showDone ? Theme.Primary  : Theme.Surface;
+        _todoBtn.ForeColor = !_showDone ? Color.White     : Theme.TextSecondary;
+        _todoBtn.FlatAppearance.MouseOverBackColor = !_showDone ? Theme.PrimaryHover : Theme.Background;
+
+        _doneBtn.BackColor = _showDone  ? Theme.Primary  : Theme.Surface;
+        _doneBtn.ForeColor = _showDone  ? Color.White     : Theme.TextSecondary;
+        _doneBtn.FlatAppearance.MouseOverBackColor = _showDone ? Theme.PrimaryHover : Theme.Background;
+    }
+
     private void LoadAssignments()
     {
         var student = _studentId.HasValue ? StudentRepository.GetById(_studentId.Value) : null;
@@ -123,6 +215,7 @@ public class StudentAssignmentsControl : UserControl
 
         if (courseIds.Count == 0)
         {
+            _assignments = new List<AssignmentStudentView>();
             ShowEmpty(Loc.T("student.assignments.no_course"));
             return;
         }
@@ -131,45 +224,48 @@ public class StudentAssignmentsControl : UserControl
             .SelectMany(cid => AssignmentRepository.GetForStudent(cid, student!.Id))
             .ToList();
 
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        var visible = _showDone
+            ? _assignments.Where(a => a.IsSubmitted).ToList()
+            : _assignments.Where(a => !a.IsSubmitted).ToList();
+
         if (_assignments.Count == 0)
         {
             ShowEmpty(Loc.T("student.assignments.no_assignments"));
             return;
         }
 
+        if (visible.Count == 0)
+        {
+            ShowEmpty(_showDone
+                ? Loc.T("student.assignments.empty.done")
+                : Loc.T("student.assignments.empty.todo"));
+            return;
+        }
+
         _emptyLabel.Visible = false;
         _grid.Visible = true;
 
-        _grid.DataSource = _assignments.Select(a => new
+        _grid.DataSource = visible.Select(a => new
         {
             a.Id,
-            Title   = a.Title,
-            Due     = a.DueDate,
-            Status  = a.IsSubmitted
-                        ? Loc.T("student.assignments.status.submitted")
-                        : a.IsOverdue
-                            ? Loc.T("student.assignments.status.overdue")
-                            : Loc.T("student.assignments.status.not_submitted")
+            Title  = a.Title,
+            Due    = a.DueDate,
+            Status = a.IsSubmitted
+                       ? Loc.T("student.assignments.status.submitted")
+                       : a.IsOverdue
+                           ? Loc.T("student.assignments.status.overdue")
+                           : Loc.T("student.assignments.status.not_submitted")
         }).ToList();
 
         if (_grid.Columns["Id"]     is { } ic) ic.Visible = false;
         if (_grid.Columns["Title"]  is { } tc) tc.HeaderText = Loc.T("student.assignments.col.title");
         if (_grid.Columns["Due"]    is { } dc) { dc.HeaderText = Loc.T("student.assignments.col.duedate"); dc.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; dc.Width = 110; }
         if (_grid.Columns["Status"] is { } sc) { sc.HeaderText = Loc.T("student.assignments.col.status");  sc.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; sc.Width = 140; }
-
-        // Color status cells
-        _grid.CellFormatting += (_, e) =>
-        {
-            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-            if (_grid.Columns[e.ColumnIndex].Name != "Status") return;
-            if (e.RowIndex >= _assignments.Count) return;
-            var a = _assignments[e.RowIndex];
-            if (e.CellStyle == null) return;
-            e.CellStyle.ForeColor = a.IsSubmitted ? Theme.Success
-                                  : a.IsOverdue   ? Theme.Danger
-                                  :                 Theme.TextSecondary;
-            e.CellStyle.Font = new Font("Segoe UI Semibold", 9.5f);
-        };
     }
 
     private void ShowEmpty(string msg)
@@ -228,7 +324,6 @@ public class StudentAssignmentsControl : UserControl
         {
             AssignmentRepository.Submit(a.Id, _studentId.Value, dlg.FileName);
             LoadAssignments();
-            // Re-select the same row
             for (int i = 0; i < _grid.Rows.Count; i++)
             {
                 if ((int)_grid.Rows[i].Cells["Id"].Value == a.Id)
