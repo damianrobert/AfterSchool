@@ -200,8 +200,14 @@
   "grades.export.no_course": "Select a course first.",
   "grades.export.no_student": "Select a student first.",
 
-  "reports.export.header": "Excel exports",
-  "reports.export.hint": "Exports are saved to your Downloads folder.",
+  "export.dialog.title": "Choose export format",
+  "export.dialog.hint": "Select the format for the exported file.",
+  "export.dialog.excel": "Excel (.xlsx)",
+  "export.dialog.pdf": "PDF (.pdf)",
+  "export.dialog.cancel": "Cancel",
+
+  "reports.export.header": "Exports",
+  "reports.export.hint": "Files are saved to your Downloads folder. Choose Excel or PDF on each export.",
   "reports.btn.all_students": "Export all students",
   "reports.btn.courses": "Export courses",
   "reports.btn.class_lists": "Export class lists",

@@ -80,13 +80,13 @@ public class ReportsControl : UserControl
         };
 
         AddExportButton(buttons, Loc.T("reports.btn.all_students"),
-            () => SafeExport(ExcelExportService.ExportAllStudents));
+            () => SafeExport(ExcelExportService.ExportAllStudents, PdfExportService.ExportAllStudents));
         AddExportButton(buttons, Loc.T("reports.btn.courses"),
-            () => SafeExport(ExcelExportService.ExportCourses));
+            () => SafeExport(ExcelExportService.ExportCourses, PdfExportService.ExportCourses));
         AddExportButton(buttons, Loc.T("reports.btn.class_lists"),
-            () => SafeExport(ExcelExportService.ExportClassLists));
+            () => SafeExport(ExcelExportService.ExportClassLists, PdfExportService.ExportClassLists));
         AddExportButton(buttons, Loc.T("reports.btn.schedule"),
-            () => SafeExport(ExcelExportService.ExportSchedule));
+            () => SafeExport(ExcelExportService.ExportSchedule, PdfExportService.ExportSchedule));
 
         card.Controls.Add(buttons);
         card.Controls.Add(hint);
@@ -150,7 +150,7 @@ public class ReportsControl : UserControl
         exportBtn.Click += (_, _) =>
         {
             if (_courseSelector.SelectedItem is Course c)
-                SafeExport(() => ExcelExportService.ExportClassList(c));
+                SafeExport(() => ExcelExportService.ExportClassList(c), () => PdfExportService.ExportClassList(c));
         };
 
         var btnPanel = new Panel { Dock = DockStyle.Right, Width = 220, Height = 52, BackColor = Theme.Surface };
@@ -217,8 +217,12 @@ public class ReportsControl : UserControl
             students.Count, course.Capacity, course.Teacher);
     }
 
-    private void SafeExport(Func<string> exportFn)
+    private void SafeExport(Func<string> excelFn, Func<string> pdfFn)
     {
+        var format = ExportTypeDialog.Ask(this);
+        if (format == ExportFormat.None) return;
+
+        var exportFn = format == ExportFormat.Excel ? excelFn : pdfFn;
         try
         {
             var path = exportFn();

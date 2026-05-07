@@ -232,11 +232,11 @@ public class GradesControl : UserControl
 
         if (_grid.Columns["_StudentId"] is { } sid) sid.Visible = false;
         if (_grid.Columns["_HasGrade"] is { } hg)  hg.Visible = false;
-        if (_grid.Columns["Rank"] is { } r)       { r.HeaderText = Loc.T("grades.col.rank"); r.Width = 50; r.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; }
+        if (_grid.Columns["Rank"] is { } r)       { r.HeaderText = Loc.T("grades.col.rank"); r.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; r.Width = 50; }
         if (_grid.Columns["Student"] is { } s)       s.HeaderText = Loc.T("grades.col.student");
         if (_grid.Columns["Score"] is { } sc)        sc.HeaderText = Loc.T("grades.col.score");
         if (_grid.Columns["Notes"] is { } n)         n.HeaderText = Loc.T("grades.col.notes");
-        if (_grid.Columns["Date"] is { } d)        { d.HeaderText = Loc.T("grades.col.date"); d.Width = 100; d.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; }
+        if (_grid.Columns["Date"] is { } d)        { d.HeaderText = Loc.T("grades.col.date"); d.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; d.Width = 100; }
         if (_grid.Columns["GradedBy"] is { } gb)     gb.HeaderText = Loc.T("grades.col.gradedby");
     }
 
@@ -335,9 +335,15 @@ public class GradesControl : UserControl
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
+
+        var format = ExportTypeDialog.Ask(this);
+        if (format == ExportFormat.None) return;
+
         try
         {
-            var file = ExcelExportService.ExportGradeSheet(course);
+            var file = format == ExportFormat.Excel
+                ? ExcelExportService.ExportGradeSheet(course)
+                : PdfExportService.ExportGradeSheet(course);
             var msg = string.Format(Loc.T("reports.export.success_msg"), file);
             var res = MessageBox.Show(msg, Loc.T("reports.export.success_title"),
                 MessageBoxButtons.YesNo, MessageBoxIcon.Information);
@@ -699,9 +705,15 @@ internal sealed class TranscriptDialog : Form
         }
         var student = _students.FirstOrDefault(s => s.Id == item.Id);
         if (student == null) return;
+
+        var format = ExportTypeDialog.Ask(this);
+        if (format == ExportFormat.None) return;
+
         try
         {
-            var file = ExcelExportService.ExportTranscript(student, _grades);
+            var file = format == ExportFormat.Excel
+                ? ExcelExportService.ExportTranscript(student, _grades)
+                : PdfExportService.ExportTranscript(student, _grades);
             var msg = string.Format(Loc.T("reports.export.success_msg"), file);
             var res = MessageBox.Show(msg, Loc.T("reports.export.success_title"),
                 MessageBoxButtons.YesNo, MessageBoxIcon.Information);

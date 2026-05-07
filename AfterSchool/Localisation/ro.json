@@ -200,8 +200,14 @@
   "grades.export.no_course": "Selectați mai întâi un curs.",
   "grades.export.no_student": "Selectați mai întâi un elev.",
 
-  "reports.export.header": "Export Excel",
-  "reports.export.hint": "Exporturile sunt salvate în dosarul Descărcări.",
+  "export.dialog.title": "Alegeți formatul de export",
+  "export.dialog.hint": "Selectați formatul pentru fișierul exportat.",
+  "export.dialog.excel": "Excel (.xlsx)",
+  "export.dialog.pdf": "PDF (.pdf)",
+  "export.dialog.cancel": "Anulare",
+
+  "reports.export.header": "Exporturi",
+  "reports.export.hint": "Fișierele sunt salvate în dosarul Descărcări. Alegeți Excel sau PDF la fiecare export.",
   "reports.btn.all_students": "Export toți elevii",
   "reports.btn.courses": "Export cursuri",
   "reports.btn.class_lists": "Export liste clase",
