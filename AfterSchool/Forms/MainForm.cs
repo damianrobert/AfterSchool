@@ -28,21 +28,18 @@ public class MainForm : Form
         WindowState = FormWindowState.Maximized;
         BackColor = Theme.Background;
         Font = Theme.BodyFont;
-        Icon = SystemIcons.Application;
+        Icon = AppLogo.CreateWindowIcon();
 
         _sidebar = new Panel { Dock = DockStyle.Left, Width = 240, BackColor = Theme.Sidebar };
 
-        var brand = new Label
+        var brand = new Panel
         {
-            Text = "AfterSchool",
-            Font = new Font("Segoe UI Semibold", 16f),
-            ForeColor = Color.White,
             Dock = DockStyle.Top,
             Height = 70,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(24, 0, 0, 0),
             BackColor = Color.FromArgb(15, 23, 42)
         };
+        brand.Paint += (_, e) =>
+            AppLogo.DrawHorizontalLogo(e.Graphics, 40, 14, 0, brand.Height);
 
         _navStack = new FlowLayoutPanel
         {

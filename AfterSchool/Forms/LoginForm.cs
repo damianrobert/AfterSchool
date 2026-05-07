@@ -23,6 +23,7 @@ public class LoginForm : Form
         Size = new Size(880, 560);
         BackColor = Theme.Surface;
         Font = Theme.BodyFont;
+        Icon = AppLogo.CreateWindowIcon();
 
         BuildLayout();
 
@@ -46,15 +47,18 @@ public class LoginForm : Form
             using var bg = new SolidBrush(Theme.Sidebar);
             g.FillRectangle(bg, hero.ClientRectangle);
 
+            // Logo badge
+            AppLogo.DrawBadge(g, 52, 40, 28);
+
             using var title = new Font("Segoe UI Semibold", 26f);
             using var titleBrush = new SolidBrush(Color.White);
-            g.DrawString("AfterSchool", title, titleBrush, new PointF(40, 64));
+            g.DrawString("AfterSchool", title, titleBrush, new PointF(40, 94));
 
             using var tag = new Font("Segoe UI", 11f);
             using var tagBrush = new SolidBrush(Color.FromArgb(148, 163, 184));
-            g.DrawString("Management System", tag, tagBrush, new PointF(42, 108));
+            g.DrawString("Management System", tag, tagBrush, new PointF(42, 138));
 
-            var blurbY = 180;
+            var blurbY = 210;
             using var blurb = new Font("Segoe UI", 10.5f);
             using var blurbBrush = new SolidBrush(Color.FromArgb(203, 213, 225));
             string[] lines =
