@@ -318,6 +318,7 @@ public class ChatControl : UserControl
         _active = c;
         _titleLbl.Text = c.Title;
         _messages.Clear();
+        _bubbleRows.Clear();
         _messagesInner.Controls.Clear();
 
         var dbMessages = ChatRepository.GetMessages(c.Id).ToList();
@@ -335,6 +336,7 @@ public class ChatControl : UserControl
     {
         _active = null;
         _messages.Clear();
+        _bubbleRows.Clear();
         _messagesInner.Controls.Clear();
         _titleLbl.Text = Loc.T("chat.no_conversation");
         LoadConversationList();
@@ -441,19 +443,22 @@ public class ChatControl : UserControl
 
     private void AddBubble(string content, bool isUser)
     {
-        var row = new Panel
-        {
-            BackColor = Color.Transparent,
-            AutoSize  = false,
-            Tag       = isUser
-        };
+        var row = new Panel { BackColor = Color.Transparent, AutoSize = false, Tag = isUser };
 
-        var bubble = new Panel
+        if (!isUser)
         {
-            BackColor = isUser ? Theme.Primary : Theme.Surface,
-            AutoSize  = false,
-            Tag       = "bubble"
-        };
+            row.Controls.Add(new Label
+            {
+                Text      = "Milo",
+                Font      = new Font("Segoe UI Semibold", 8f),
+                ForeColor = Theme.Primary,
+                AutoSize  = true,
+                Location  = new Point(0, 0),
+                Tag       = "name"
+            });
+        }
+
+        var bubble = new Panel { BackColor = isUser ? Theme.Primary : Theme.Surface, AutoSize = false, Tag = "bubble" };
         bubble.Paint += (_, e) =>
         {
             if (!isUser)
@@ -463,81 +468,81 @@ public class ChatControl : UserControl
             }
         };
 
-        if (!isUser)
+        // RichTextBox: read-only, no border, no scrollbar — user can select and copy text
+        var rtb = new RichTextBox
         {
-            var nameLbl = new Label
-            {
-                Text      = "Milo",
-                Font      = new Font("Segoe UI Semibold", 8f),
-                ForeColor = Theme.Primary,
-                AutoSize  = true,
-                Location  = new Point(0, 0),
-                Tag       = "name"
-            };
-            row.Controls.Add(nameLbl);
-        }
-
-        var lbl = new Label
-        {
-            Text      = content,
-            ForeColor = isUser ? Color.White : Theme.TextPrimary,
-            Font      = Theme.BodyFont,
-            AutoSize  = true,
-            Location  = new Point(12, 8),
-            Tag       = "text"
+            Text        = content,
+            ReadOnly    = true,
+            BorderStyle = BorderStyle.None,
+            BackColor   = isUser ? Theme.Primary : Theme.Surface,
+            ForeColor   = isUser ? Color.White : Theme.TextPrimary,
+            Font        = Theme.BodyFont,
+            ScrollBars  = RichTextBoxScrollBars.None,
+            WordWrap    = true,
+            TabStop     = false,
+            DetectUrls  = false,
+            Cursor      = Cursors.IBeam,
+            Tag         = "text"
         };
-        bubble.Controls.Add(lbl);
+
+        bubble.Controls.Add(rtb);
         row.Controls.Add(bubble);
         _messagesInner.Controls.Add(row);
         _bubbleRows.Add(row);
 
-        PositionRow(row, _messagesScroll.ClientSize.Width);
+        int cw = _messagesScroll.ClientSize.Width;
+        PositionRow(row, cw);
+        // Place row below all previous rows
+        row.Location = new Point(0, _bubbleRows.SkipLast(1).Sum(r => r.Height + 4) + 8);
+        _messagesInner.Size = new Size(Math.Max(_messagesInner.Width, cw), row.Bottom + 8);
     }
 
     private void PositionRow(Panel row, int containerWidth)
     {
         if (containerWidth < 100) containerWidth = 600;
-        bool isUser = (bool)(row.Tag ?? false);
-        int pad     = 16;
+        bool isUser   = (bool)(row.Tag ?? false);
+        const int Pad = 16;
+        const int PadH = 12; // bubble horizontal padding each side
+        const int PadV = 10; // bubble vertical padding each side
         int maxBubble = (int)(containerWidth * 0.72);
+        int maxTextW  = maxBubble - PadH * 2;
 
-        var bubble = row.Controls.OfType<Panel>().FirstOrDefault();
-        var lbl    = bubble?.Controls.OfType<Label>().FirstOrDefault(l => (string?)l.Tag == "text");
+        var bubble = row.Controls.OfType<Panel>().FirstOrDefault(p => (string?)p.Tag == "bubble");
+        var rtb    = bubble?.Controls.OfType<RichTextBox>().FirstOrDefault();
         var name   = row.Controls.OfType<Label>().FirstOrDefault(l => (string?)l.Tag == "name");
 
-        if (lbl == null || bubble == null) return;
+        if (rtb == null || bubble == null) return;
 
-        lbl.MaximumSize = new Size(maxBubble - 24, 0);
-        lbl.Size = lbl.PreferredSize;
+        // Measure text using TextRenderer — accurate pre-render, no handle required
+        var measured = TextRenderer.MeasureText(
+            rtb.Text.Length > 0 ? rtb.Text : " ",
+            rtb.Font,
+            new Size(maxTextW, int.MaxValue),
+            TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl);
 
-        int bubbleW = Math.Max(lbl.Width + 24, 60);
-        int nameH   = name != null ? 18 : 0;
-        int bubbleH = lbl.Height + 16;
+        int textW  = Math.Min(measured.Width, maxTextW);
+        // Add one extra line height as buffer for RichTextBox's internal padding
+        int textH  = measured.Height + (int)rtb.Font.GetHeight();
+        int bubbleW = Math.Max(textW + PadH * 2, 64);
+        int nameH   = name != null ? 20 : 0;
+        int bubbleH = textH + PadV * 2;
         int rowH    = nameH + bubbleH + 8;
+
+        int bubbleX = isUser ? containerWidth - bubbleW - Pad : Pad;
 
         if (name != null)
         {
-            name.Location = new Point(0, 0);
+            name.Location = new Point(Pad, 0);
             name.Size     = name.PreferredSize;
         }
 
-        bubble.Location = new Point(0, nameH);
+        bubble.Location = new Point(bubbleX, nameH);
         bubble.Size     = new Size(bubbleW, bubbleH);
 
-        row.Size = new Size(containerWidth, rowH);
-        row.Location = new Point(0, _bubbleRows
-            .TakeWhile(r => r != row)
-            .Sum(r => r.Height + 4) + 8);
+        rtb.Location = new Point(PadH, PadV);
+        rtb.Size     = new Size(textW, textH);
 
-        if (isUser)
-        {
-            bubble.Location = new Point(containerWidth - bubbleW - pad, nameH);
-        }
-        else
-        {
-            if (name != null) name.Location = new Point(pad, 0);
-            bubble.Location = new Point(pad, nameH);
-        }
+        row.Size = new Size(containerWidth, rowH);
     }
 
     private void RelayoutMessages()
