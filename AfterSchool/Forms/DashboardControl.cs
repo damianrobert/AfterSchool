@@ -19,6 +19,12 @@ public class DashboardControl : UserControl
         BuildLayout();
     }
 
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        AutoScrollPosition = new Point(0, 0);
+    }
+
     private void BuildLayout()
     {
         var root = new TableLayoutPanel
