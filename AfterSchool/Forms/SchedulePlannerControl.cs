@@ -24,16 +24,17 @@ public class SchedulePlannerControl : UserControl
     private ScheduleView?     _selected;
     private Panel?            _selectedCard;
 
-    private readonly Label  _weekLabel  = new();
-    private readonly Button _prevBtn    = new();
-    private readonly Button _nextBtn    = new();
-    private readonly Button _todayBtn   = new();
-    private readonly Button _pickBtn    = new();
-    private readonly Button _newBtn     = new();
-    private readonly Button _editBtn    = new();
-    private readonly Button _deleteBtn  = new();
-    private readonly Button _roomsBtn   = new();
-    private readonly Panel  _calArea    = new();
+    private readonly Label   _weekLabel  = new();
+    private readonly Button  _prevBtn    = new();
+    private readonly Button  _nextBtn    = new();
+    private readonly Button  _todayBtn   = new();
+    private readonly Button  _pickBtn    = new();
+    private readonly Button  _newBtn     = new();
+    private readonly Button  _editBtn    = new();
+    private readonly Button  _deleteBtn  = new();
+    private readonly Button  _roomsBtn   = new();
+    private readonly Panel   _calArea    = new();
+    private readonly ToolTip _cardTip    = new() { InitialDelay = 350, AutoPopDelay = 7000, ReshowDelay = 150, ShowAlways = true };
 
     public SchedulePlannerControl()
     {
@@ -475,6 +476,21 @@ public class SchedulePlannerControl : UserControl
         }
         card.Click       += (_, _) => Select(card, slot);
         card.DoubleClick += (_, _) => OpenEditor(slot);
+
+        var tipLines = new List<string>
+        {
+            slot.CourseName,
+            $"{slot.DayOfWeek}  •  {slot.StartTime} – {slot.EndTime}"
+        };
+        if (!string.IsNullOrWhiteSpace(slot.Teacher))
+            tipLines.Add($"Teacher: {slot.Teacher}");
+        if (!string.IsNullOrWhiteSpace(slot.Room))
+            tipLines.Add($"Room: {slot.Room}");
+
+        string tipText = string.Join(Environment.NewLine, tipLines);
+        _cardTip.SetToolTip(card, tipText);
+        foreach (Control c in card.Controls)
+            _cardTip.SetToolTip(c, tipText);
 
         return card;
     }
