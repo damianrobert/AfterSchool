@@ -21,6 +21,7 @@ public class StudentMainForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1000, 660);
         Size = new Size(1200, 760);
+        WindowState = FormWindowState.Maximized;
         BackColor = Theme.Background;
         Font = Theme.BodyFont;
         Icon = SystemIcons.Application;
