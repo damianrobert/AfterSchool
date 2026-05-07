@@ -198,19 +198,25 @@ public class MainForm : Form
 
     private Panel BuildLangPanel()
     {
-        var panel = new Panel { Dock = DockStyle.Right, Width = 80, BackColor = Theme.Surface };
+        const int BtnW = 76, BtnH = 34, PanelW = 96;
+        var panel = new Panel { Dock = DockStyle.Right, Width = PanelW, BackColor = Theme.Surface };
 
         UpdateLangButton();
-        _langBtn.Width = 58;
-        _langBtn.Height = 36;
-        _langBtn.Left = (80 - 58) / 2;
-        _langBtn.Top = (70 - 36) / 2;
-        _langBtn.Cursor = Cursors.Hand;
-        _langBtn.FlatStyle = FlatStyle.Flat;
-        _langBtn.BackColor = Theme.Background;
-        _langBtn.FlatAppearance.BorderSize = 1;
-        _langBtn.FlatAppearance.BorderColor = Theme.Border;
-        _langBtn.FlatAppearance.MouseOverBackColor = Theme.Border;
+        _langBtn.Width  = BtnW;
+        _langBtn.Height = BtnH;
+        _langBtn.Left   = (PanelW - BtnW) / 2;
+        _langBtn.Top    = (70 - BtnH) / 2;
+        _langBtn.Font   = new Font("Segoe UI Semibold", 9f);
+        _langBtn.TextImageRelation = TextImageRelation.ImageBeforeText;
+        _langBtn.TextAlign  = ContentAlignment.MiddleLeft;
+        _langBtn.Padding    = new Padding(6, 0, 8, 0);
+        _langBtn.Cursor     = Cursors.Hand;
+        _langBtn.FlatStyle  = FlatStyle.Flat;
+        _langBtn.BackColor  = Theme.Background;
+        _langBtn.ForeColor  = Theme.TextPrimary;
+        _langBtn.FlatAppearance.BorderSize           = 1;
+        _langBtn.FlatAppearance.BorderColor          = Theme.Border;
+        _langBtn.FlatAppearance.MouseOverBackColor   = Theme.Border;
         _langBtn.Click += (_, _) => Loc.SetLanguage(Loc.Current == "en" ? "ro" : "en");
 
         panel.Controls.Add(_langBtn);
@@ -221,15 +227,14 @@ public class MainForm : Form
     {
         var old = _langFlag;
         _langFlag = CreateFlagBitmap(Loc.Current);
-        _langBtn.Text = "";
+        _langBtn.Text  = Loc.Current.ToUpper();
         _langBtn.Image = _langFlag;
-        _langBtn.ImageAlign = ContentAlignment.MiddleCenter;
         old?.Dispose();
     }
 
     private static Bitmap CreateFlagBitmap(string lang)
     {
-        const int W = 42, H = 26;
+        const int W = 26, H = 16;
         var bmp = new Bitmap(W, H);
         using var g = Graphics.FromImage(bmp);
         g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
