@@ -326,8 +326,9 @@ public class SchedulePlannerControl : UserControl
                     OnDayClick(e.Y, Days[ci]);
             };
 
-            foreach (var slot in daySlots)
-                col.Controls.Add(MakeSlotCard(slot, colW));
+            var layout = AssignOverlapColumns(daySlots);
+            foreach (var (slot, colIdx, colCount) in layout)
+                col.Controls.Add(MakeSlotCard(slot, colW, colIdx, colCount));
 
             canvas.Controls.Add(col);
         }
@@ -359,7 +360,54 @@ public class SchedulePlannerControl : UserControl
         }
     }
 
-    private Panel MakeSlotCard(ScheduleView slot, int colW)
+    // Assigns each slot a sub-column index so overlapping slots sit side-by-side.
+    private static List<(ScheduleView Slot, int ColIndex, int ColCount)> AssignOverlapColumns(
+        List<ScheduleView> slots)
+    {
+        if (slots.Count == 0) return new();
+
+        var data = slots.Select(s =>
+        {
+            TimeSpan.TryParse(s.StartTime, out var st);
+            TimeSpan.TryParse(s.EndTime,   out var et);
+            int startMin = (int)st.TotalMinutes;
+            int endMin   = Math.Max(startMin + 30, (int)et.TotalMinutes);
+            return (Slot: s, Start: startMin, End: endMin);
+        }).OrderBy(x => x.Start).ToList();
+
+        // Greedy lane assignment: place each slot in the first lane whose last slot ended
+        var laneEnds = new List<int>();
+        var slotLane = new int[data.Count];
+
+        for (int i = 0; i < data.Count; i++)
+        {
+            int picked = -1;
+            for (int c = 0; c < laneEnds.Count; c++)
+            {
+                if (laneEnds[c] <= data[i].Start) { picked = c; laneEnds[c] = data[i].End; break; }
+            }
+            if (picked == -1) { picked = laneEnds.Count; laneEnds.Add(data[i].End); }
+            slotLane[i] = picked;
+        }
+
+        // For each slot determine the total lanes needed within its overlap group
+        var result = new List<(ScheduleView, int, int)>();
+        for (int i = 0; i < data.Count; i++)
+        {
+            int maxLanes = slotLane[i] + 1;
+            for (int j = 0; j < data.Count; j++)
+            {
+                if (j == i) continue;
+                if (data[j].Start < data[i].End && data[j].End > data[i].Start)
+                    maxLanes = Math.Max(maxLanes, slotLane[j] + 1);
+            }
+            result.Add((data[i].Slot, slotLane[i], maxLanes));
+        }
+
+        return result;
+    }
+
+    private Panel MakeSlotCard(ScheduleView slot, int colW, int colIndex = 0, int colCount = 1)
     {
         TimeSpan.TryParse(slot.StartTime, out var startTs);
         TimeSpan.TryParse(slot.EndTime,   out var endTs);
@@ -369,11 +417,15 @@ public class SchedulePlannerControl : UserControl
         int top    = (int)((startMin - TimeStartMinutes) * PixelsPerMinute) + 1;
         int height = Math.Max(26, (int)((endMin - startMin) * PixelsPerMinute) - 3);
 
+        int subColW = Math.Max(30, (colW - 4) / colCount);
+        int cardX   = 2 + colIndex * subColW;
+        int cardW   = (colIndex == colCount - 1) ? Math.Max(30, colW - 2 - cardX) : subColW - 2;
+
         bool isSelected = _selected?.Id == slot.Id;
         var card = new Panel
         {
-            Location  = new Point(3, top),
-            Size      = new Size(colW - 6, height),
+            Location  = new Point(cardX, top),
+            Size      = new Size(cardW, height),
             BackColor = isSelected ? Color.FromArgb(191, 219, 254) : Color.FromArgb(239, 246, 255),
             Padding   = new Padding(8, 3, 6, 3),
             Cursor    = Cursors.Hand,
