@@ -62,7 +62,7 @@ Guidelines:
         {
             new JsonObject
             {
-                ["function_declarations"] = new JsonArray
+                ["functionDeclarations"] = new JsonArray
                 {
                     new JsonObject
                     {
@@ -88,7 +88,7 @@ Guidelines:
 
         var body = new JsonObject
         {
-            ["system_instruction"] = new JsonObject
+            ["systemInstruction"] = new JsonObject
             {
                 ["parts"] = new JsonArray { new JsonObject { ["text"] = systemPrompt } }
             },
@@ -104,10 +104,19 @@ Guidelines:
         var response = await PostGeminiAsync(url, body);
         if (response == null) return "Milo could not connect. Please check your internet connection.";
 
+        // Surface API-level errors
+        var apiError = response["error"]?["message"]?.GetValue<string>();
+        if (!string.IsNullOrEmpty(apiError)) return $"Gemini API error: {apiError}";
+
         // Check for function call
         var candidate = response["candidates"]?[0];
+        var finishReason = candidate?["finishReason"]?.GetValue<string>();
         var parts = candidate?["content"]?["parts"];
-        if (parts == null) return "Milo returned an empty response.";
+        if (parts == null)
+        {
+            if (finishReason == "SAFETY") return "Milo couldn't respond to that message due to safety filters.";
+            return "Milo returned an empty response.";
+        }
 
         foreach (var part in parts.AsArray())
         {
@@ -146,9 +155,11 @@ Guidelines:
                 body.Remove("tools"); // no more tool calls needed
                 response = await PostGeminiAsync(url, body);
                 if (response == null) return "Milo could not process the search results.";
+                var apiError2 = response["error"]?["message"]?.GetValue<string>();
+                if (!string.IsNullOrEmpty(apiError2)) return $"Gemini API error: {apiError2}";
                 candidate = response["candidates"]?[0];
                 parts = candidate?["content"]?["parts"];
-                if (parts == null) return "Milo returned an empty response.";
+                if (parts == null) return "Milo returned an empty response after search.";
                 break;
             }
         }
