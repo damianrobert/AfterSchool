@@ -27,6 +27,14 @@ public static class UserRepository
             new { Username = username });
     }
 
+    public static User? GetById(int id)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        return conn.QueryFirstOrDefault<User>(
+            "SELECT * FROM Users WHERE Id = @Id AND IsActive = 1",
+            new { Id = id });
+    }
+
     public static int Insert(User user)
     {
         using var conn = DatabaseHelper.CreateConnection();
