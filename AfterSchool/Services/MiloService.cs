@@ -9,7 +9,7 @@ namespace AfterSchool.Services;
 public static class MiloService
 {
     private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
-    private const string GeminiModel = "gemini-pro-latest";
+    private const string GeminiModel = "gemini-2.5-pro";
 
     private const string SystemPromptTemplate = @"You are Milo, a friendly and professional AI assistant embedded in an afterschool management system. You help both students and administrative staff.
 
@@ -24,6 +24,8 @@ Guidelines:
 - For questions about the school (courses, schedule, students, grades), use the school context provided.
 - For general knowledge questions, answer from your training data.
 - Use the web_search tool only when you need current, real-world information not covered by training data.
+- For administrative tasks (adding schedule slots, exporting reports, etc.), use the available action tools to perform the operation directly, then report what was done.
+- When exporting, always open the file automatically. If the user does not specify a format, default to Excel.
 - Respond in the same language the user writes in (English or Romanian).";
 
     public static async Task<string> SendAsync(
@@ -58,32 +60,33 @@ Guidelines:
             ["parts"] = new JsonArray { new JsonObject { ["text"] = userMessage } }
         });
 
-        var tools = new JsonArray
+        var functionDeclarations = new JsonArray
         {
             new JsonObject
             {
-                ["functionDeclarations"] = new JsonArray
+                ["name"] = "web_search",
+                ["description"] = "Search the web for current information when needed.",
+                ["parameters"] = new JsonObject
                 {
-                    new JsonObject
+                    ["type"] = "object",
+                    ["properties"] = new JsonObject
                     {
-                        ["name"] = "web_search",
-                        ["description"] = "Search the web for current information when needed.",
-                        ["parameters"] = new JsonObject
+                        ["query"] = new JsonObject
                         {
-                            ["type"] = "object",
-                            ["properties"] = new JsonObject
-                            {
-                                ["query"] = new JsonObject
-                                {
-                                    ["type"] = "string",
-                                    ["description"] = "The search query."
-                                }
-                            },
-                            ["required"] = new JsonArray { "query" }
+                            ["type"] = "string",
+                            ["description"] = "The search query."
                         }
-                    }
+                    },
+                    ["required"] = new JsonArray { "query" }
                 }
             }
+        };
+        foreach (var decl in MiloActions.GetFunctionDeclarations())
+            functionDeclarations.Add(decl?.DeepClone());
+
+        var tools = new JsonArray
+        {
+            new JsonObject { ["functionDeclarations"] = functionDeclarations }
         };
 
         var body = new JsonObject
@@ -121,47 +124,55 @@ Guidelines:
         foreach (var part in parts.AsArray())
         {
             var funcCall = part?["functionCall"];
-            if (funcCall != null)
+            if (funcCall == null) continue;
+
+            var funcName = funcCall["name"]?.GetValue<string>() ?? "";
+            string funcResult;
+            if (funcName == "web_search")
             {
                 var query = funcCall["args"]?["query"]?.GetValue<string>() ?? "";
-                var searchResult = await BraveSearchAsync(query);
+                funcResult = await BraveSearchAsync(query);
+            }
+            else
+            {
+                funcResult = await MiloActions.ExecuteAsync(funcName, funcCall["args"]);
+            }
 
-                // Add model's function call turn
-                contents.Add(new JsonObject
-                {
-                    ["role"] = "model",
-                    ["parts"] = new JsonArray { new JsonObject { ["functionCall"] = funcCall!.DeepClone() } }
-                });
+            // Add model's function call turn
+            contents.Add(new JsonObject
+            {
+                ["role"] = "model",
+                ["parts"] = new JsonArray { new JsonObject { ["functionCall"] = funcCall.DeepClone() } }
+            });
 
-                // Add function result
-                contents.Add(new JsonObject
+            // Add function result
+            contents.Add(new JsonObject
+            {
+                ["role"] = "user",
+                ["parts"] = new JsonArray
                 {
-                    ["role"] = "user",
-                    ["parts"] = new JsonArray
+                    new JsonObject
                     {
-                        new JsonObject
+                        ["functionResponse"] = new JsonObject
                         {
-                            ["functionResponse"] = new JsonObject
-                            {
-                                ["name"] = "web_search",
-                                ["response"] = new JsonObject { ["result"] = searchResult }
-                            }
+                            ["name"] = funcName,
+                            ["response"] = new JsonObject { ["result"] = funcResult }
                         }
                     }
-                });
+                }
+            });
 
-                // Second call with search results
-                body["contents"] = contents;
-                body.Remove("tools"); // no more tool calls needed
-                response = await PostGeminiAsync(url, body);
-                if (response == null) return "Milo could not process the search results.";
-                var apiError2 = response["error"]?["message"]?.GetValue<string>();
-                if (!string.IsNullOrEmpty(apiError2)) return $"Gemini API error: {apiError2}";
-                candidate = response["candidates"]?[0];
-                parts = candidate?["content"]?["parts"];
-                if (parts == null) return "Milo returned an empty response after search.";
-                break;
-            }
+            // Second call with function result
+            body["contents"] = contents;
+            body.Remove("tools"); // no more tool calls needed
+            response = await PostGeminiAsync(url, body);
+            if (response == null) return "Milo could not process the action result.";
+            var apiError2 = response["error"]?["message"]?.GetValue<string>();
+            if (!string.IsNullOrEmpty(apiError2)) return $"Gemini API error: {apiError2}";
+            candidate = response["candidates"]?[0];
+            parts = candidate?["content"]?["parts"];
+            if (parts == null) return "Milo returned an empty response after action.";
+            break;
         }
 
         // Extract text
@@ -234,20 +245,77 @@ Guidelines:
         var sb = new StringBuilder();
         try
         {
+            // ── Courses ───────────────────────────────────────────────────────
             var courses = Data.CourseRepository.GetAll().ToList();
-            sb.AppendLine($"Courses ({courses.Count}):");
+            sb.AppendLine($"## Courses ({courses.Count} total)");
             foreach (var c in courses)
-                sb.AppendLine($"  - {c.Name} (Teacher: {(string.IsNullOrWhiteSpace(c.Teacher) ? "unassigned" : c.Teacher)}, Capacity: {c.Capacity})");
+            {
+                var enrolled = Data.CourseRepository.GetEnrolledCount(c.Id);
+                var teacher  = string.IsNullOrWhiteSpace(c.Teacher) ? "unassigned" : c.Teacher;
+                sb.AppendLine($"  - [{c.Id}] {c.Name} | Teacher: {teacher} | Enrolled: {enrolled}/{c.Capacity}" +
+                              (string.IsNullOrWhiteSpace(c.Description) ? "" : $" | Desc: {c.Description}"));
+            }
 
-            var today = DateTime.Today.DayOfWeek.ToString();
-            var todaySlots = Data.ScheduleRepository.GetAll()
-                .Where(s => s.DayOfWeek.Equals(today, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(s => s.StartTime)
-                .ToList();
+            // ── Full weekly schedule ──────────────────────────────────────────
+            var allSlots = Data.ScheduleRepository.GetAll().ToList();
+            var days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+            sb.AppendLine($"\n## Weekly Schedule ({allSlots.Count} slots)");
+            foreach (var day in days)
+            {
+                var daySlots = allSlots
+                    .Where(s => s.DayOfWeek.Equals(day, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(s => s.StartTime)
+                    .ToList();
+                if (daySlots.Count == 0) continue;
+                sb.AppendLine($"  {day}:");
+                foreach (var s in daySlots)
+                    sb.AppendLine($"    - {s.CourseName} (Teacher: {s.Teacher}): {s.StartTime}–{s.EndTime}, Room: {s.Room}");
+            }
 
-            sb.AppendLine($"\nToday's schedule ({today}, {todaySlots.Count} slots):");
-            foreach (var s in todaySlots)
-                sb.AppendLine($"  - {s.CourseName}: {s.StartTime}–{s.EndTime} in {s.Room}");
+            // ── Students ──────────────────────────────────────────────────────
+            var students = Data.StudentRepository.GetAll().ToList();
+            var active   = students.Count(s => s.Status == "Active");
+            sb.AppendLine($"\n## Students ({students.Count} total, {active} active)");
+            foreach (var s in students)
+            {
+                var courses_list = string.IsNullOrWhiteSpace(s.CourseName) ? "none" : s.CourseName;
+                sb.AppendLine($"  - [{s.Id}] {s.FirstName} {s.LastName} | Status: {s.Status} | Courses: {courses_list}" +
+                              (string.IsNullOrWhiteSpace(s.Email) ? "" : $" | Email: {s.Email}"));
+            }
+
+            // ── Grades ────────────────────────────────────────────────────────
+            sb.AppendLine("\n## Grades (by course)");
+            foreach (var c in courses)
+            {
+                var graded = Data.GradeRepository.GetByCourse(c.Id)
+                    .Where(g => !string.IsNullOrWhiteSpace(g.Score))
+                    .ToList();
+                if (graded.Count == 0) continue;
+                sb.AppendLine($"  {c.Name} (scale: {(string.IsNullOrWhiteSpace(c.GradingScale) ? "N/A" : c.GradingScale)}):");
+                foreach (var g in graded)
+                {
+                    var notes = string.IsNullOrWhiteSpace(g.Notes) ? "" : $" | Notes: {g.Notes}";
+                    var date  = string.IsNullOrWhiteSpace(g.GradedDate) ? "" : $" | Date: {g.GradedDate}";
+                    sb.AppendLine($"    - {g.StudentFirstName} {g.StudentLastName}: {g.Score}{notes}{date}");
+                }
+            }
+
+            // ── Assignments ───────────────────────────────────────────────────
+            sb.AppendLine("\n## Assignments (by course)");
+            var today = DateTime.Today.ToString("yyyy-MM-dd");
+            foreach (var c in courses)
+            {
+                var assignments = Data.AssignmentRepository.GetByCourse(c.Id).ToList();
+                if (assignments.Count == 0) continue;
+                sb.AppendLine($"  {c.Name}:");
+                foreach (var a in assignments)
+                {
+                    var overdue = !string.IsNullOrWhiteSpace(a.DueDate) && string.Compare(a.DueDate, today, StringComparison.Ordinal) < 0
+                        ? " [OVERDUE]" : "";
+                    var desc = string.IsNullOrWhiteSpace(a.Description) ? "" : $" | {a.Description}";
+                    sb.AppendLine($"    - [{a.Id}] \"{a.Title}\" | Due: {a.DueDate}{overdue} | Submissions: {a.SubmissionCount}{desc}");
+                }
+            }
         }
         catch { sb.AppendLine("(School data unavailable)"); }
         return sb.ToString();
