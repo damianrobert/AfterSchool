@@ -128,8 +128,18 @@ public static class DatabaseHelper
                 FOREIGN KEY (StudentId)    REFERENCES Students(Id)    ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS StudentCourses (
+                StudentId INTEGER NOT NULL,
+                CourseId  INTEGER NOT NULL,
+                PRIMARY KEY (StudentId, CourseId),
+                FOREIGN KEY (StudentId) REFERENCES Students(Id) ON DELETE CASCADE,
+                FOREIGN KEY (CourseId)  REFERENCES Courses(Id)  ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS IX_Schedule_CourseId              ON Schedule(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Students_EnrolledCourseId      ON Students(EnrolledCourseId);
+            CREATE INDEX IF NOT EXISTS IX_StudentCourses_StudentId       ON StudentCourses(StudentId);
+            CREATE INDEX IF NOT EXISTS IX_StudentCourses_CourseId        ON StudentCourses(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Grades_CourseId                ON Grades(CourseId);
             CREATE INDEX IF NOT EXISTS IX_Grades_StudentId               ON Grades(StudentId);
             CREATE INDEX IF NOT EXISTS IX_CourseFiles_CourseId           ON CourseFiles(CourseId);
@@ -148,6 +158,47 @@ public static class DatabaseHelper
         TryAlter(conn, "ALTER TABLE Courses ADD COLUMN GradingScale TEXT NOT NULL DEFAULT 'Numeric';");
         TryAlter(conn, "ALTER TABLE Users ADD COLUMN MustChangePassword INTEGER NOT NULL DEFAULT 0;");
         TryAlter(conn, "ALTER TABLE Users ADD COLUMN StudentId INTEGER REFERENCES Students(Id) ON DELETE SET NULL;");
+        RecreateSubmissionsWithoutUnique(conn);
+        MigrateEnrollmentsToJunctionTable(conn);
+    }
+
+    private static void MigrateEnrollmentsToJunctionTable(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            INSERT OR IGNORE INTO StudentCourses (StudentId, CourseId)
+            SELECT Id, EnrolledCourseId FROM Students WHERE EnrolledCourseId IS NOT NULL";
+        cmd.ExecuteNonQuery();
+    }
+
+    // SQLite can't DROP CONSTRAINT, so we recreate the table without UNIQUE(AssignmentId, StudentId)
+    private static void RecreateSubmissionsWithoutUnique(SqliteConnection conn)
+    {
+        using var check = conn.CreateCommand();
+        check.CommandText = "SELECT sql FROM sqlite_master WHERE type='table' AND name='AssignmentSubmissions'";
+        var tableSql = (string?)check.ExecuteScalar();
+        if (tableSql == null || !tableSql.Contains("UNIQUE")) return;
+
+        void Exec(string sql) { using var c = conn.CreateCommand(); c.CommandText = sql; c.ExecuteNonQuery(); }
+
+        Exec("PRAGMA foreign_keys = OFF");
+        Exec(@"CREATE TABLE AssignmentSubmissions_new (
+            Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            AssignmentId  INTEGER NOT NULL,
+            StudentId     INTEGER NOT NULL,
+            FileName      TEXT    NOT NULL,
+            StoredName    TEXT    NOT NULL,
+            FileSize      INTEGER NOT NULL DEFAULT 0,
+            SubmittedDate TEXT    NOT NULL DEFAULT '',
+            FOREIGN KEY (AssignmentId) REFERENCES Assignments(Id) ON DELETE CASCADE,
+            FOREIGN KEY (StudentId)    REFERENCES Students(Id)    ON DELETE CASCADE
+        )");
+        Exec("INSERT INTO AssignmentSubmissions_new SELECT * FROM AssignmentSubmissions");
+        Exec("DROP TABLE AssignmentSubmissions");
+        Exec("ALTER TABLE AssignmentSubmissions_new RENAME TO AssignmentSubmissions");
+        Exec("CREATE INDEX IF NOT EXISTS IX_AssignmentSubmissions_AsgId ON AssignmentSubmissions(AssignmentId)");
+        Exec("CREATE INDEX IF NOT EXISTS IX_AssignmentSubmissions_StdId ON AssignmentSubmissions(StudentId)");
+        Exec("PRAGMA foreign_keys = ON");
     }
 
     private static void TryAlter(SqliteConnection conn, string sql)

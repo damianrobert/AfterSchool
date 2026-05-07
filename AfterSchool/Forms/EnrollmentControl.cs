@@ -12,7 +12,7 @@ public class EnrollmentControl : UserControl
     private readonly ComboBox _courseFilter = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Button _newBtn = new();
     private readonly Button _editBtn = new();
-    private readonly Button _transferBtn = new();
+    private readonly Button _enrollBtn = new();
     private readonly Button _deleteBtn = new();
     private readonly Button _accountBtn = new();
 
@@ -27,10 +27,10 @@ public class EnrollmentControl : UserControl
 
     private void BuildLayout()
     {
-        _newBtn.Text      = Loc.T("enrollment.btn.new");
-        _editBtn.Text     = Loc.T("common.edit");
-        _transferBtn.Text = Loc.T("common.transfer");
-        _deleteBtn.Text   = Loc.T("common.delete");
+        _newBtn.Text    = Loc.T("enrollment.btn.new");
+        _editBtn.Text   = Loc.T("common.edit");
+        _enrollBtn.Text = Loc.T("enrollment.btn.manage_enrollment");
+        _deleteBtn.Text = Loc.T("common.delete");
         _accountBtn.Text  = Loc.T("enrollment.btn.create_account");
         _accountBtn.Visible = Session.Current?.Role == "Administrator";
 
@@ -48,7 +48,6 @@ public class EnrollmentControl : UserControl
 
         var toolbar = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.Surface };
 
-        // Left side: search + course filter in a docked fill panel
         var leftPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -74,18 +73,17 @@ public class EnrollmentControl : UserControl
         leftPanel.Controls.Add(_searchBox);
         leftPanel.Controls.Add(_courseFilter);
 
-        // Right side: action buttons
         Theme.StyleButton(_newBtn, primary: true);
         Theme.StyleButton(_editBtn);
-        Theme.StyleButton(_transferBtn);
+        Theme.StyleButton(_enrollBtn);
         Theme.StyleButton(_deleteBtn, danger: true);
         Theme.StyleButton(_accountBtn);
 
-        _newBtn.Click      += (_, _) => OpenEditor(null);
-        _editBtn.Click     += (_, _) => EditSelected();
-        _transferBtn.Click += (_, _) => TransferSelected();
-        _deleteBtn.Click   += (_, _) => DeleteSelected();
-        _accountBtn.Click  += (_, _) => CreateAccountForSelected();
+        _newBtn.Click    += (_, _) => OpenEditor(null);
+        _editBtn.Click   += (_, _) => EditSelected();
+        _enrollBtn.Click += (_, _) => ManageEnrollmentForSelected();
+        _deleteBtn.Click += (_, _) => DeleteSelected();
+        _accountBtn.Click += (_, _) => CreateAccountForSelected();
 
         var buttons = new FlowLayoutPanel
         {
@@ -98,12 +96,11 @@ public class EnrollmentControl : UserControl
             Padding = new Padding(0, 8, 0, 8)
         };
         buttons.Controls.Add(_deleteBtn);
-        buttons.Controls.Add(_transferBtn);
+        buttons.Controls.Add(_enrollBtn);
         buttons.Controls.Add(_editBtn);
         buttons.Controls.Add(_newBtn);
         buttons.Controls.Add(_accountBtn);
 
-        // Add Fill panel first, Right panel last — WinForms docks last-added first
         toolbar.Controls.Add(leftPanel);
         toolbar.Controls.Add(buttons);
 
@@ -157,9 +154,9 @@ public class EnrollmentControl : UserControl
                 || s.Email.Contains(q, StringComparison.OrdinalIgnoreCase));
 
         if (filter?.CourseId == -1)
-            query = query.Where(s => s.EnrolledCourseId == null);
+            query = query.Where(s => string.IsNullOrEmpty(s.CourseIdList));
         else if (filter?.CourseId != null)
-            query = query.Where(s => s.EnrolledCourseId == filter.CourseId);
+            query = query.Where(s => s.GetCourseIds().Contains(filter.CourseId.Value));
 
         var rows = query.Select(s => new
         {
@@ -203,11 +200,11 @@ public class EnrollmentControl : UserControl
         LoadStudents();
     }
 
-    private void TransferSelected()
+    private void ManageEnrollmentForSelected()
     {
         var s = SelectedStudent();
         if (s == null) return;
-        using var dlg = new TransferDialog(s);
+        using var dlg = new ManageEnrollmentDialog(s);
         if (dlg.ShowDialog(this) == DialogResult.OK) LoadStudents();
     }
 
@@ -254,7 +251,7 @@ internal sealed class StudentEditorDialog : Form
     private readonly DateTimePicker _birth = new() { Format = DateTimePickerFormat.Short };
     private readonly ComboBox _gender = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ComboBox _status = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _course = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly CheckedListBox _courseList = new() { CheckOnClick = true };
     private readonly DateTimePicker _register = new() { Format = DateTimePickerFormat.Short };
 
     public StudentEditorDialog(Student? existing)
@@ -271,20 +268,15 @@ internal sealed class StudentEditorDialog : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        Size = new Size(620, 640);
+        Size = new Size(620, 720);
         BackColor = Theme.Surface;
         Font = Theme.BodyFont;
 
         foreach (var tb in new[] { _firstName, _lastName, _email, _contact, _address })
             Theme.StyleTextBox(tb);
 
-        // Gender and status values are stored in DB as English — not translated
         _gender.Items.AddRange(new object[] { "Female", "Male", "Other" });
         _status.Items.AddRange(new object[] { "Active", "Inactive", "Graduated" });
-
-        var courses = new List<CourseChoice> { new(null, Loc.T("enrollment.not_enrolled")) };
-        courses.AddRange(CourseRepository.GetAll().Select(c => new CourseChoice(c.Id, c.Name)));
-        foreach (var c in courses) _course.Items.Add(c);
 
         _firstName.Text = _student.FirstName;
         _lastName.Text = _student.LastName;
@@ -295,14 +287,21 @@ internal sealed class StudentEditorDialog : Form
         _status.SelectedItem = string.IsNullOrEmpty(_student.Status) ? "Active" : _student.Status;
         _birth.Value = ParseDate(_student.BirthDate, DateTime.Today.AddYears(-10));
         _register.Value = ParseDate(_student.RegisterDate, DateTime.Today);
-        var courseIdx = courses.FindIndex(c => c.CourseId == _student.EnrolledCourseId);
-        _course.SelectedIndex = courseIdx >= 0 ? courseIdx : 0;
+
+        // Populate course checklist
+        var enrolledIds = _isNew ? new List<int>() : StudentRepository.GetEnrolledCourseIds(_student.Id);
+        _courseList.Font = Theme.BodyFont;
+        _courseList.BackColor = Theme.Background;
+        _courseList.ForeColor = Theme.TextPrimary;
+        _courseList.BorderStyle = BorderStyle.FixedSingle;
+        foreach (var c in CourseRepository.GetAll())
+            _courseList.Items.Add(new CourseListItem(c.Id, c.Name), enrolledIds.Contains(c.Id));
 
         var layout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            Padding = new Padding(24),
+            Padding = new Padding(24, 24, 24, 8),
             BackColor = Theme.Surface
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
@@ -318,7 +317,26 @@ internal sealed class StudentEditorDialog : Form
         cursor.Add(Loc.T("enrollment.field.registerdate"), _register);
         cursor.Add(Loc.T("enrollment.field.status"), _status);
         cursor.Add(Loc.T("enrollment.field.address"), _address, colSpan: 2);
-        cursor.Add(Loc.T("enrollment.field.course"), _course, colSpan: 2);
+
+        // Courses section below main fields
+        var coursesPanel = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 180,
+            BackColor = Theme.Surface,
+            Padding = new Padding(24, 4, 24, 8)
+        };
+        var coursesLbl = new Label
+        {
+            Text = Loc.T("enrollment.field.courses"),
+            Font = new Font("Segoe UI Semibold", 9.5f),
+            ForeColor = Theme.TextSecondary,
+            Dock = DockStyle.Top,
+            Height = 22
+        };
+        _courseList.Dock = DockStyle.Fill;
+        coursesPanel.Controls.Add(_courseList);
+        coursesPanel.Controls.Add(coursesLbl);
 
         var ok = new Button { Text = _isNew ? Loc.T("common.create") : Loc.T("common.save") };
         var cancel = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel };
@@ -338,6 +356,7 @@ internal sealed class StudentEditorDialog : Form
         buttons.Controls.Add(cancel);
 
         Controls.Add(layout);
+        Controls.Add(coursesPanel);
         Controls.Add(buttons);
         AcceptButton = ok;
         CancelButton = cancel;
@@ -401,49 +420,55 @@ internal sealed class StudentEditorDialog : Form
         _student.Gender = _gender.SelectedItem?.ToString() ?? "";
         _student.Status = _status.SelectedItem?.ToString() ?? "Active";
 
-        var selectedCourse = _course.SelectedItem as CourseChoice;
-        _student.EnrolledCourseId = selectedCourse?.CourseId;
+        int studentId;
+        if (_isNew)
+            studentId = StudentRepository.Insert(_student);
+        else
+        {
+            studentId = _student.Id;
+            StudentRepository.Update(_student);
+        }
 
-        if (_isNew) StudentRepository.Insert(_student);
-        else StudentRepository.Update(_student);
+        var checkedIds = _courseList.CheckedItems
+            .Cast<CourseListItem>()
+            .Select(c => c.CourseId)
+            .ToList();
+        StudentRepository.SetEnrollments(studentId, checkedIds);
 
         DialogResult = DialogResult.OK;
         Close();
     }
 
-    internal sealed record CourseChoice(int? CourseId, string Label)
+    private sealed record CourseListItem(int CourseId, string Name)
     {
-        public override string ToString() => Label;
+        public override string ToString() => Name;
     }
 }
 
-internal sealed class TransferDialog : Form
+internal sealed class ManageEnrollmentDialog : Form
 {
     private readonly StudentView _student;
-    private readonly ComboBox _course = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly CheckedListBox _courseList = new() { CheckOnClick = true };
 
-    public TransferDialog(StudentView student)
+    public ManageEnrollmentDialog(StudentView student)
     {
         _student = student;
-        Text = Loc.T("enrollment.transfer.title");
+        Text = Loc.T("enrollment.manage.title");
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        Size = new Size(480, 260);
+        Size = new Size(420, 380);
         BackColor = Theme.Surface;
         Font = Theme.BodyFont;
 
-        var choices = new List<StudentEditorDialog.CourseChoice>
-        {
-            new(null, Loc.T("enrollment.unenroll"))
-        };
-        choices.AddRange(CourseRepository.GetAll()
-            .Select(c => new StudentEditorDialog.CourseChoice(c.Id, c.Name)));
-        foreach (var c in choices) _course.Items.Add(c);
-        var idx = choices.FindIndex(c => c.CourseId == student.EnrolledCourseId);
-        _course.SelectedIndex = idx >= 0 ? idx : 0;
-        _course.Font = Theme.BodyFont;
+        var enrolledIds = StudentRepository.GetEnrolledCourseIds(student.Id);
+        _courseList.Font = Theme.BodyFont;
+        _courseList.BackColor = Theme.Background;
+        _courseList.ForeColor = Theme.TextPrimary;
+        _courseList.BorderStyle = BorderStyle.FixedSingle;
+        foreach (var c in CourseRepository.GetAll())
+            _courseList.Items.Add(new CourseListItem(c.Id, c.Name), enrolledIds.Contains(c.Id));
 
         var header = new Label
         {
@@ -451,43 +476,31 @@ internal sealed class TransferDialog : Form
             Font = new Font("Segoe UI Semibold", 13f),
             ForeColor = Theme.TextPrimary,
             Dock = DockStyle.Top,
-            Height = 30
+            Height = 32
         };
-        var currentLbl = new Label
+        var infoLbl = new Label
         {
-            Text = string.Format(Loc.T("enrollment.transfer.currently"),
-                _student.CourseName ?? Loc.T("enrollment.transfer.unenrolled")),
+            Text = Loc.T("enrollment.manage.info"),
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
             Height = 22
         };
-        var pickLbl = new Label
-        {
-            Text = Loc.T("enrollment.transfer.to"),
-            Font = new Font("Segoe UI Semibold", 9.5f),
-            ForeColor = Theme.TextSecondary,
-            Dock = DockStyle.Top,
-            Height = 22,
-            Padding = new Padding(0, 12, 0, 0)
-        };
-        _course.Dock = DockStyle.Top;
-        _course.Height = 30;
+        _courseList.Dock = DockStyle.Fill;
 
-        var body = new Panel { Dock = DockStyle.Fill, Padding = new Padding(24), BackColor = Theme.Surface };
-        body.Controls.Add(_course);
-        body.Controls.Add(pickLbl);
-        body.Controls.Add(currentLbl);
+        var body = new Panel { Dock = DockStyle.Fill, Padding = new Padding(24, 16, 24, 8), BackColor = Theme.Surface };
+        body.Controls.Add(_courseList);
+        body.Controls.Add(infoLbl);
         body.Controls.Add(header);
 
-        var ok = new Button { Text = Loc.T("common.transfer") };
+        var ok = new Button { Text = Loc.T("common.save") };
         var cancel = new Button { Text = Loc.T("common.cancel"), DialogResult = DialogResult.Cancel };
         Theme.StyleButton(ok, primary: true);
         Theme.StyleButton(cancel);
         ok.Click += (_, _) =>
         {
-            var choice = _course.SelectedItem as StudentEditorDialog.CourseChoice;
-            StudentRepository.Transfer(_student.Id, choice?.CourseId);
+            var ids = _courseList.CheckedItems.Cast<CourseListItem>().Select(c => c.CourseId).ToList();
+            StudentRepository.SetEnrollments(_student.Id, ids);
             DialogResult = DialogResult.OK;
             Close();
         };
@@ -507,6 +520,11 @@ internal sealed class TransferDialog : Form
         Controls.Add(buttons);
         AcceptButton = ok;
         CancelButton = cancel;
+    }
+
+    private sealed record CourseListItem(int CourseId, string Name)
+    {
+        public override string ToString() => Name;
     }
 }
 
@@ -555,7 +573,6 @@ internal sealed class CreateStudentAccountDialog : Form
             Height = 40
         };
 
-        // Pre-fill username from student name
         _username.Text = $"{_student.FirstName}.{_student.LastName}"
                           .ToLowerInvariant()
                           .Replace(" ", "");

@@ -80,24 +80,24 @@ public class StudentFilesControl : UserControl
     {
         _courseFlow.Controls.Clear();
 
-        var studentId = Session.Current?.StudentId;
-        var student   = studentId.HasValue ? StudentRepository.GetById(studentId.Value) : null;
+        var studentId  = Session.Current?.StudentId;
+        var courseIds  = studentId.HasValue
+            ? StudentRepository.GetEnrolledCourseIds(studentId.Value)
+            : new List<int>();
 
-        if (student?.EnrolledCourseId == null)
+        if (courseIds.Count == 0)
         {
             _courseFlow.Controls.Add(EmptyHint(Loc.T("student.files.no_course")));
             return;
         }
 
-        var course = CourseRepository.GetById(student.EnrolledCourseId.Value);
-        if (course == null)
+        foreach (var courseId in courseIds)
         {
-            _courseFlow.Controls.Add(EmptyHint(Loc.T("student.files.no_course")));
-            return;
+            var course = CourseRepository.GetById(courseId);
+            if (course == null) continue;
+            var fileCount = CourseFileRepository.GetByCourse(course.Id).Count();
+            _courseFlow.Controls.Add(BuildCourseCard(course, fileCount));
         }
-
-        var fileCount = CourseFileRepository.GetByCourse(course.Id).Count();
-        _courseFlow.Controls.Add(BuildCourseCard(course, fileCount));
     }
 
     private Panel BuildCourseCard(Course course, int fileCount)

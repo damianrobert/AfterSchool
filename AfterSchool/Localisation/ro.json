@@ -285,6 +285,10 @@
   "changepass.validation.length": "Parola trebuie să aibă cel puțin 6 caractere.",
   "changepass.validation.match": "Parolele nu se potrivesc.",
 
+  "enrollment.btn.manage_enrollment": "Gestionează înscrierea",
+  "enrollment.manage.title": "Gestionare înscriere elev",
+  "enrollment.manage.info": "Selectați cursurile pentru acest elev:",
+  "enrollment.field.courses": "Cursuri înscrise",
   "enrollment.btn.create_account": "Creare cont",
   "enrollment.account.dialog.title": "Creare cont elev",
   "enrollment.account.field.username": "Utilizator",

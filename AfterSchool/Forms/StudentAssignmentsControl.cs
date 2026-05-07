@@ -117,14 +117,18 @@ public class StudentAssignmentsControl : UserControl
     {
         var student = _studentId.HasValue ? StudentRepository.GetById(_studentId.Value) : null;
 
-        if (student?.EnrolledCourseId == null)
+        var courseIds = student != null
+            ? StudentRepository.GetEnrolledCourseIds(student.Id)
+            : new List<int>();
+
+        if (courseIds.Count == 0)
         {
             ShowEmpty(Loc.T("student.assignments.no_course"));
             return;
         }
 
-        _assignments = AssignmentRepository
-            .GetForStudent(student.EnrolledCourseId.Value, student.Id)
+        _assignments = courseIds
+            .SelectMany(cid => AssignmentRepository.GetForStudent(cid, student!.Id))
             .ToList();
 
         if (_assignments.Count == 0)

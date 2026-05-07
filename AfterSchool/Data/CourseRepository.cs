@@ -46,8 +46,10 @@ public static class CourseRepository
     public static int GetEnrolledCount(int courseId)
     {
         using var conn = DatabaseHelper.CreateConnection();
-        return conn.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM Students WHERE EnrolledCourseId = @Id AND Status = 'Active'",
+        return conn.ExecuteScalar<int>(@"
+            SELECT COUNT(*) FROM StudentCourses sc
+            JOIN Students s ON s.Id = sc.StudentId
+            WHERE sc.CourseId = @Id AND s.Status = 'Active'",
             new { Id = courseId });
     }
 }

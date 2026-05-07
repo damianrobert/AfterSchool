@@ -285,6 +285,10 @@
   "changepass.validation.length": "Password must be at least 6 characters.",
   "changepass.validation.match": "Passwords do not match.",
 
+  "enrollment.btn.manage_enrollment": "Manage Enrollment",
+  "enrollment.manage.title": "Manage Student Enrollment",
+  "enrollment.manage.info": "Select the courses for this student:",
+  "enrollment.field.courses": "Enrolled courses",
   "enrollment.btn.create_account": "Create Account",
   "enrollment.account.dialog.title": "Create Student Login",
   "enrollment.account.field.username": "Username",

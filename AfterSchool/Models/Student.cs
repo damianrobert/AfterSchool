@@ -29,6 +29,13 @@ public class StudentView
     public string Gender { get; set; } = string.Empty;
     public string RegisterDate { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
-    public int? EnrolledCourseId { get; set; }
-    public string? CourseName { get; set; }
+    public string? CourseName { get; set; }    // comma-separated list from GROUP_CONCAT
+    public string? CourseIdList { get; set; }  // comma-separated course IDs from GROUP_CONCAT
+
+    public List<int> GetCourseIds() =>
+        CourseIdList?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(int.Parse)
+            .ToList()
+        ?? new List<int>();
 }

@@ -28,7 +28,8 @@ public static class GradeRepository
             FROM Students s
             CROSS JOIN Courses c
             LEFT JOIN Grades g ON g.StudentId = s.Id AND g.CourseId = c.Id
-            WHERE s.EnrolledCourseId = c.Id AND c.Id = @CourseId
+            WHERE EXISTS (SELECT 1 FROM StudentCourses sc WHERE sc.StudentId = s.Id AND sc.CourseId = c.Id)
+              AND c.Id = @CourseId
             ORDER BY s.LastName, s.FirstName",
             new { CourseId = courseId }).ToList();
     }

@@ -266,10 +266,14 @@ internal class StudentOverviewControl : UserControl
     private void BuildLayout()
     {
         var studentId = Session.Current?.StudentId;
-        var student   = studentId.HasValue ? StudentRepository.GetById(studentId.Value) : null;
-        Course? course = null;
-        if (student?.EnrolledCourseId.HasValue == true)
-            course = CourseRepository.GetById(student.EnrolledCourseId!.Value);
+        var courseIds = studentId.HasValue
+            ? StudentRepository.GetEnrolledCourseIds(studentId.Value)
+            : new List<int>();
+        var courses = courseIds
+            .Select(id => CourseRepository.GetById(id))
+            .Where(c => c != null)
+            .Cast<Course>()
+            .ToList();
 
         var scroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.Background };
 
@@ -296,11 +300,12 @@ internal class StudentOverviewControl : UserControl
             Dock = DockStyle.Top,
             Height = 46
         };
+        var enrolledText = courses.Count > 0
+            ? $"{Loc.T("student.overview.enrolled_in")}: {string.Join(", ", courses.Select(c => c.Name))}"
+            : Loc.T("student.overview.not_enrolled");
         var greetSub = new Label
         {
-            Text = course != null
-                ? $"{Loc.T("student.overview.enrolled_in")}: {course.Name}"
-                : Loc.T("student.overview.not_enrolled"),
+            Text = enrolledText,
             Font = Theme.BodyFont,
             ForeColor = Theme.TextSecondary,
             Dock = DockStyle.Top,
@@ -310,8 +315,8 @@ internal class StudentOverviewControl : UserControl
         greeting.Controls.Add(greetLbl);
         stack.Controls.Add(greeting);
 
-        // Course card
-        if (course != null)
+        // Course cards
+        foreach (var course in courses)
         {
             var courseCard = Card(580, 120);
             courseCard.Controls.Add(InfoRow(Loc.T("student.overview.teacher"), course.Teacher.Length > 0 ? course.Teacher : "—"));
@@ -319,23 +324,29 @@ internal class StudentOverviewControl : UserControl
                 courseCard.Controls.Add(InfoRow("Description", course.Description));
             courseCard.Controls.Add(SectionHeader(course.Name));
             stack.Controls.Add(courseCard);
+        }
 
-            // Today's schedule
+        // Today's schedule (across all enrolled courses)
+        if (courses.Count > 0)
+        {
             var today = DateTime.Today.DayOfWeek.ToString();
-            var slots = ScheduleRepository.GetForCourse(course.Id)
-                            .Where(s => s.DayOfWeek.Equals(today, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
+            var todaySlots = courses
+                .SelectMany(c => ScheduleRepository.GetForCourse(c.Id)
+                    .Where(s => s.DayOfWeek.Equals(today, StringComparison.OrdinalIgnoreCase))
+                    .Select(s => (slot: s, courseName: c.Name)))
+                .OrderBy(x => x.slot.StartTime)
+                .ToList();
 
-            var todayCard = Card(580, slots.Count > 0 ? 60 + slots.Count * 36 : 80);
+            var todayCard = Card(580, todaySlots.Count > 0 ? 60 + todaySlots.Count * 36 : 80);
             todayCard.Controls.Add(SectionHeader(Loc.T("student.overview.today")));
-            if (slots.Count == 0)
+            if (todaySlots.Count == 0)
             {
                 todayCard.Controls.Add(InfoRow("", Loc.T("student.overview.no_today")));
             }
             else
             {
-                foreach (var s in slots)
-                    todayCard.Controls.Add(InfoRow($"{s.StartTime}–{s.EndTime}", s.Room));
+                foreach (var (s, courseName) in todaySlots)
+                    todayCard.Controls.Add(InfoRow($"{s.StartTime}–{s.EndTime}", $"{courseName} · {s.Room}"));
             }
             stack.Controls.Add(todayCard);
         }
@@ -394,7 +405,9 @@ internal class StudentScheduleControl : UserControl
     private void BuildLayout()
     {
         var studentId = Session.Current?.StudentId;
-        var student   = studentId.HasValue ? StudentRepository.GetById(studentId.Value) : null;
+        var courseIds = studentId.HasValue
+            ? StudentRepository.GetEnrolledCourseIds(studentId.Value)
+            : new List<int>();
 
         var card = new Panel
         {
@@ -408,36 +421,40 @@ internal class StudentScheduleControl : UserControl
             e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
         };
 
-        if (student?.EnrolledCourseId == null)
+        if (courseIds.Count == 0)
         {
             card.Controls.Add(CenterLabel(Loc.T("student.schedule.no_course")));
             Controls.Add(card);
             return;
         }
 
-        var slots = ScheduleRepository.GetForCourse(student.EnrolledCourseId.Value).ToList();
+        var dayOrder = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+        var rows = courseIds
+            .SelectMany(cid =>
+            {
+                var cName = CourseRepository.GetById(cid)?.Name ?? "—";
+                return ScheduleRepository.GetForCourse(cid)
+                    .Select(s => new
+                    {
+                        Course = cName,
+                        Day    = Loc.T($"days.{s.DayOfWeek.ToLower()}"),
+                        DayKey = s.DayOfWeek,
+                        Start  = s.StartTime,
+                        End    = s.EndTime,
+                        Room   = s.Room
+                    });
+            })
+            .OrderBy(r => Array.IndexOf(dayOrder, r.DayKey))
+            .ThenBy(r => r.Start)
+            .Select(r => new { r.Course, r.Day, r.Start, r.End, r.Room })
+            .ToList();
 
-        if (slots.Count == 0)
+        if (rows.Count == 0)
         {
             card.Controls.Add(CenterLabel(Loc.T("student.schedule.no_slots")));
             Controls.Add(card);
             return;
         }
-
-        var courseName = CourseRepository.GetById(student.EnrolledCourseId.Value)?.Name ?? "—";
-        var dayOrder = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
-
-        var rows = slots
-            .OrderBy(s => Array.IndexOf(dayOrder, s.DayOfWeek))
-            .ThenBy(s => s.StartTime)
-            .Select(s => new
-            {
-                Course = courseName,
-                Day    = Loc.T($"days.{s.DayOfWeek.ToLower()}"),
-                Start  = s.StartTime,
-                End    = s.EndTime,
-                Room   = s.Room
-            }).ToList();
 
         var grid = new DataGridView { Dock = DockStyle.Fill };
         Theme.StyleGrid(grid);
