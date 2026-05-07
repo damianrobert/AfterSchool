@@ -22,7 +22,7 @@ public class DashboardControl : UserControl
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        AutoScrollPosition = new Point(0, 0);
+        BeginInvoke(() => AutoScrollPosition = new Point(0, 0));
     }
 
     private void BuildLayout()
@@ -429,6 +429,7 @@ public class DashboardControl : UserControl
             var grid = new DataGridView();
             Theme.StyleGrid(grid);
             grid.Dock = DockStyle.Fill;
+            grid.TabStop = false;
             grid.DataSource = students.Select(s => new
             {
                 Name = $"{s.LastName}, {s.FirstName}",
