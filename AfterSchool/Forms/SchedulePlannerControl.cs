@@ -34,7 +34,7 @@ public class SchedulePlannerControl : UserControl
     private readonly Button  _deleteBtn  = new();
     private readonly Button  _roomsBtn   = new();
     private readonly Panel   _calArea    = new();
-    private readonly ToolTip _cardTip    = new() { InitialDelay = 350, AutoPopDelay = 7000, ReshowDelay = 150, ShowAlways = true };
+    private readonly ToolTip _cardTip    = new() { AutoPopDelay = 6000, ShowAlways = true };
 
     public SchedulePlannerControl()
     {
@@ -486,11 +486,26 @@ public class SchedulePlannerControl : UserControl
             tipLines.Add($"Teacher: {slot.Teacher}");
         if (!string.IsNullOrWhiteSpace(slot.Room))
             tipLines.Add($"Room: {slot.Room}");
-
         string tipText = string.Join(Environment.NewLine, tipLines);
-        _cardTip.SetToolTip(card, tipText);
+
+        // Use explicit Show/Hide because SetToolTip is unreliable on deeply nested panels.
+        // The MouseLeave bounds-check prevents flickering when crossing into child labels.
+        void ShowTip() {
+            var pos = card.PointToClient(Cursor.Position);
+            _cardTip.Show(tipText, card, pos.X + 12, pos.Y - 55, 6000);
+        }
+        void HideTip() {
+            if (!card.ClientRectangle.Contains(card.PointToClient(Cursor.Position)))
+                _cardTip.Hide(card);
+        }
+
+        card.MouseEnter += (_, _) => ShowTip();
+        card.MouseLeave += (_, _) => HideTip();
         foreach (Control c in card.Controls)
-            _cardTip.SetToolTip(c, tipText);
+        {
+            c.MouseEnter += (_, _) => ShowTip();
+            c.MouseLeave += (_, _) => HideTip();
+        }
 
         return card;
     }
