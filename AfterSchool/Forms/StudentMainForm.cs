@@ -64,6 +64,7 @@ public class StudentMainForm : Form
             ("nav.student.assignments", "nav.student.assignments.title", (Func<UserControl>)(() => new StudentAssignmentsControl())),
             ("nav.student.files",      "nav.student.files.title",       (Func<UserControl>)(() => new StudentFilesControl())),
             ("nav.chat",               "nav.chat.title",                (Func<UserControl>)(() => new ChatControl())),
+            ("nav.messages",           "nav.messages.title",            (Func<UserControl>)(() => new DirectChatControl())),
         };
 
         foreach (var (labelKey, titleKey, factory) in navDefs)
