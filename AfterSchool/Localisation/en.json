@@ -458,5 +458,14 @@
   "notifications.msg.submission": "{0} submitted \"{1}\"",
   "notifications.msg.enrollment": "{0} enrolled in your course",
   "notifications.msg.schedule.new": "New class added: {0} on {1} at {2}",
-  "notifications.msg.schedule.updated": "Schedule updated: {0} on {1} at {2}"
+  "notifications.msg.schedule.updated": "Schedule updated: {0} on {1} at {2}",
+  "notifications.msg.group_message": "New message in {0} from {1}",
+
+  "nav.coursechat": "Course Chat",
+  "nav.coursechat.title": "Course Group Chats",
+  "coursechat.select": "Select a course to open its chat",
+  "coursechat.no_courses": "You are not enrolled in any course",
+  "coursechat.input.placeholder": "Message the group…",
+  "coursechat.btn.send": "Send",
+  "coursechat.teacher_label": "Teacher: {0}"
 }

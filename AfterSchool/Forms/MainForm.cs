@@ -99,7 +99,8 @@ public class MainForm : Form
         AddNavButton("nav.reports",   "nav.reports.title",   () => new ReportsControl());
         AddNavButton("nav.tts",       "nav.tts.title",       () => new TextToSpeechControl());
         AddNavButton("nav.chat",      "nav.chat.title",      () => new ChatControl());
-        AddNavButton("nav.messages",  "nav.messages.title",  () => new DirectChatControl());
+        AddNavButton("nav.messages",   "nav.messages.title",   () => new DirectChatControl());
+        AddNavButton("nav.coursechat", "nav.coursechat.title", () => new CourseGroupChatControl());
 
         Loc.LanguageChanged += OnLanguageChanged;
         Load += (_, _) =>

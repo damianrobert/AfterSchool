@@ -458,5 +458,14 @@
   "notifications.msg.submission": "{0} a trimis \"{1}\"",
   "notifications.msg.enrollment": "{0} s-a înscris la cursul tău",
   "notifications.msg.schedule.new": "Ore noi adăugate: {0} pe {1} la {2}",
-  "notifications.msg.schedule.updated": "Program actualizat: {0} pe {1} la {2}"
+  "notifications.msg.schedule.updated": "Program actualizat: {0} pe {1} la {2}",
+  "notifications.msg.group_message": "Mesaj nou în {0} de la {1}",
+
+  "nav.coursechat": "Chat Curs",
+  "nav.coursechat.title": "Chat de grup pentru cursuri",
+  "coursechat.select": "Selectează un curs pentru a deschide chat-ul",
+  "coursechat.no_courses": "Nu ești înscris la niciun curs",
+  "coursechat.input.placeholder": "Scrie un mesaj în grup…",
+  "coursechat.btn.send": "Trimite",
+  "coursechat.teacher_label": "Profesor: {0}"
 }
