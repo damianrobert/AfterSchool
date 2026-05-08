@@ -21,18 +21,23 @@ public class DirectChatControl : UserControl
     private readonly Button          _deleteBtn     = new();
 
     // ── State ─────────────────────────────────────────────────────────────────
-    private DirectConversationView?        _active;
-    private readonly List<DirectMessageView> _messages    = new();
-    private readonly List<Panel>           _bubbleRows  = new();
-    private readonly List<string>          _pendingFiles = new();
+    private DirectConversationView?          _active;
+    private readonly List<DirectMessageView> _messages      = new();
+    private readonly List<Panel>             _bubbleRows    = new();
+    private readonly List<string>            _pendingFiles  = new();
+    private readonly Dictionary<int, string> _lastReadDates = new(); // convId -> last-read date
     private bool _sending;
     private bool _relayouting;
+    private readonly System.Windows.Forms.Timer _pollTimer = new() { Interval = 10_000 };
 
     public DirectChatControl()
     {
         BackColor = Theme.Background;
         BuildLayout();
         LoadConversationList();
+        _pollTimer.Tick   += (_, _) => PollConversationList();
+        Disposed          += (_, _) => _pollTimer.Dispose();
+        _pollTimer.Start();
         Loc.LanguageChanged += () => { LoadConversationList(); UpdateUiText(); };
     }
 
@@ -247,7 +252,12 @@ public class DirectChatControl : UserControl
     {
         _convList.Controls.Clear();
         var convs = DirectMessageRepository.GetConversations(Session.Current?.Id ?? 0);
-        foreach (var c in convs) _convList.Controls.Add(BuildConvItem(c));
+        foreach (var c in convs)
+        {
+            if (!_lastReadDates.ContainsKey(c.Id))
+                _lastReadDates[c.Id] = c.LastMessageDate; // first time = treat as read
+            _convList.Controls.Add(BuildConvItem(c));
+        }
         if (_convList.Controls.Count == 0)
             _convList.Controls.Add(new Label
             {
@@ -257,8 +267,18 @@ public class DirectChatControl : UserControl
             });
     }
 
+    private void PollConversationList()
+    {
+        if (!string.IsNullOrEmpty(_searchBox.Text)) return;
+        LoadConversationList();
+    }
+
     private Panel BuildConvItem(DirectConversationView c)
     {
+        bool hasUnread = c.Id != _active?.Id
+                         && _lastReadDates.TryGetValue(c.Id, out var readDate)
+                         && string.Compare(c.LastMessageDate, readDate, StringComparison.Ordinal) > 0;
+
         var item = new Panel
         {
             Width = 240, Height = 56, Cursor = Cursors.Hand,
@@ -269,15 +289,24 @@ public class DirectChatControl : UserControl
         {
             using var pen = new Pen(Theme.Border);
             e.Graphics.DrawLine(pen, 8, item.Height - 1, item.Width - 8, item.Height - 1);
+            if (hasUnread)
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using var brush = new SolidBrush(Color.FromArgb(220, 38, 38));
+                e.Graphics.FillEllipse(brush, item.Width - 22, (item.Height - 10) / 2, 10, 10);
+            }
         };
         var nameLbl = new Label
         {
-            Text = c.DisplayName, Font = new Font("Segoe UI", 9.5f), ForeColor = Theme.TextPrimary,
-            Bounds = new Rectangle(12, 8, 216, 22), AutoEllipsis = true
+            Text = c.DisplayName,
+            Font = hasUnread ? new Font("Segoe UI Semibold", 9.5f) : new Font("Segoe UI", 9.5f),
+            ForeColor = Theme.TextPrimary,
+            Bounds = new Rectangle(12, 8, 210, 22), AutoEllipsis = true
         };
         var preview = new Label
         {
-            Text = c.LastPreview, Font = Theme.SmallFont, ForeColor = Theme.TextSecondary,
+            Text = c.LastPreview, Font = Theme.SmallFont,
+            ForeColor = hasUnread ? Theme.TextPrimary : Theme.TextSecondary,
             Bounds = new Rectangle(12, 30, 175, 18), AutoEllipsis = true
         };
         var dateLbl = new Label
@@ -374,6 +403,7 @@ public class DirectChatControl : UserControl
     private void LoadConversation(DirectConversationView c)
     {
         _active = c;
+        _lastReadDates[c.Id] = c.LastMessageDate; // mark as read before rebuilding list
         _headerLbl.Text     = c.DisplayName;
         _headerRoleLbl.Text = c.OtherUserRole;
         SetInputEnabled(true);
@@ -382,6 +412,7 @@ public class DirectChatControl : UserControl
         _messages.AddRange(DirectMessageRepository.GetMessages(c.Id, Session.Current?.Id ?? 0));
         foreach (var m in _messages) AddMessageRow(m);
         ScrollToBottom();
+        LoadConversationList(); // refresh sidebar to remove badge
         _inputBox.Focus();
     }
 

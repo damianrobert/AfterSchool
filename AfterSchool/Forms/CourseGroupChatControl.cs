@@ -17,21 +17,29 @@ public class CourseGroupChatControl : UserControl
     private readonly Label           _headerSubLbl = new();
 
     // ── State ─────────────────────────────────────────────────────────────────
-    private Course?                         _activeCourse;
-    private readonly List<CourseMessageView> _messages   = new();
-    private readonly List<Panel>             _bubbleRows = new();
+    private Course?                          _activeCourse;
+    private readonly List<CourseMessageView> _messages        = new();
+    private readonly List<Panel>             _bubbleRows      = new();
+    private readonly List<Course>            _accessibleCourses = new();
+    private readonly Dictionary<int, int>    _currentMsgIds   = new(); // latest msg ID per course
+    private readonly Dictionary<int, int>    _lastReadMsgIds  = new(); // last read msg ID per course
     private bool _sending;
     private bool _relayouting;
     private int  _lastMessageId;
     private readonly System.Windows.Forms.Timer _pollTimer = new() { Interval = 5_000 };
+
+    // Teacher bubble colours
+    private static readonly Color TeacherBubbleBg     = Color.FromArgb(240, 253, 244);
+    private static readonly Color TeacherBubbleBorder = Color.FromArgb(134, 239, 172);
+    private static readonly Color TeacherNameColor    = Color.FromArgb(22, 163, 74);
 
     public CourseGroupChatControl()
     {
         BackColor = Theme.Background;
         BuildLayout();
         LoadCourseList();
-        _pollTimer.Tick += (_, _) => PollNewMessages();
-        Disposed += (_, _) => _pollTimer.Dispose();
+        _pollTimer.Tick   += (_, _) => PollNewMessages();
+        Disposed          += (_, _) => _pollTimer.Dispose();
         Loc.LanguageChanged += () => { LoadCourseList(); UpdateUiText(); };
     }
 
@@ -167,9 +175,26 @@ public class CourseGroupChatControl : UserControl
 
     private void LoadCourseList()
     {
+        _accessibleCourses.Clear();
+        _accessibleCourses.AddRange(GetAccessibleCourses());
+
+        // Batch-fetch latest message IDs for badge tracking
+        var latestIds = CourseMessageRepository.GetLastMessageIds(_accessibleCourses.Select(c => c.Id));
+        foreach (var c in _accessibleCourses)
+        {
+            var latestId = latestIds.GetValueOrDefault(c.Id, 0);
+            _currentMsgIds[c.Id] = latestId;
+            if (!_lastReadMsgIds.ContainsKey(c.Id))
+                _lastReadMsgIds[c.Id] = latestId; // first time = treat as read
+        }
+
+        RenderCourseList();
+    }
+
+    private void RenderCourseList()
+    {
         _courseList.Controls.Clear();
-        var courses = GetAccessibleCourses();
-        foreach (var c in courses) _courseList.Controls.Add(BuildCourseItem(c));
+        foreach (var c in _accessibleCourses) _courseList.Controls.Add(BuildCourseItem(c));
         if (_courseList.Controls.Count == 0)
             _courseList.Controls.Add(new Label
             {
@@ -192,6 +217,10 @@ public class CourseGroupChatControl : UserControl
 
     private Panel BuildCourseItem(Course c)
     {
+        bool hasUnread = _activeCourse?.Id != c.Id
+                         && _currentMsgIds.TryGetValue(c.Id, out var cur)
+                         && cur > _lastReadMsgIds.GetValueOrDefault(c.Id, 0);
+
         var item = new Panel
         {
             Width = 240, Height = 56, Cursor = Cursors.Hand,
@@ -202,16 +231,25 @@ public class CourseGroupChatControl : UserControl
         {
             using var pen = new Pen(Theme.Border);
             e.Graphics.DrawLine(pen, 8, item.Height - 1, item.Width - 8, item.Height - 1);
+            if (hasUnread)
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using var brush = new SolidBrush(Color.FromArgb(220, 38, 38));
+                e.Graphics.FillEllipse(brush, item.Width - 22, (item.Height - 10) / 2, 10, 10);
+            }
         };
         var nameLbl = new Label
         {
-            Text = c.Name, Font = new Font("Segoe UI", 9.5f), ForeColor = Theme.TextPrimary,
-            Bounds = new Rectangle(12, 8, 216, 22), AutoEllipsis = true
+            Text = c.Name, Font = new Font("Segoe UI", hasUnread ? 9.5f : 9.5f),
+            ForeColor = hasUnread ? Theme.TextPrimary : Theme.TextPrimary,
+            Bounds = new Rectangle(12, 8, 210, 22), AutoEllipsis = true
         };
+        if (hasUnread) nameLbl.Font = new Font("Segoe UI Semibold", 9.5f);
+
         var teacherLbl = new Label
         {
             Text = c.Teacher.Length > 0 ? c.Teacher : "—", Font = Theme.SmallFont,
-            ForeColor = Theme.TextSecondary, Bounds = new Rectangle(12, 30, 216, 18), AutoEllipsis = true
+            ForeColor = Theme.TextSecondary, Bounds = new Rectangle(12, 30, 210, 18), AutoEllipsis = true
         };
         void OnClick(object? s, EventArgs e) => LoadCourse(c);
         item.Click += OnClick; nameLbl.Click += OnClick; teacherLbl.Click += OnClick;
@@ -236,21 +274,43 @@ public class CourseGroupChatControl : UserControl
         _messages.Clear();
         _messages.AddRange(CourseMessageRepository.GetMessages(c.Id, Session.Current?.Id ?? 0));
         _lastMessageId = _messages.Count > 0 ? _messages[^1].Id : 0;
+
+        // Mark as read
+        _lastReadMsgIds[c.Id] = _lastMessageId;
+        _currentMsgIds[c.Id]  = _lastMessageId;
+
         foreach (var m in _messages) AddMessageRow(m);
         ScrollToBottom();
-        LoadCourseList();
+        RenderCourseList(); // refresh sidebar to clear badge
         _inputBox.Focus();
         _pollTimer.Start();
     }
 
     private void PollNewMessages()
     {
-        if (_activeCourse == null || _sending) return;
+        if (_sending) return;
+
+        // Check all courses for badge updates
+        var latestIds = CourseMessageRepository.GetLastMessageIds(_accessibleCourses.Select(x => x.Id));
+        bool listDirty = false;
+        foreach (var (courseId, lastId) in latestIds)
+        {
+            _currentMsgIds[courseId] = lastId;
+            if (courseId != _activeCourse?.Id && lastId > _lastReadMsgIds.GetValueOrDefault(courseId, 0))
+                listDirty = true;
+        }
+        if (listDirty) RenderCourseList();
+
+        // Fetch new messages for the active course
+        if (_activeCourse == null) return;
         var all = CourseMessageRepository.GetMessages(_activeCourse.Id, Session.Current?.Id ?? 0);
         var newMsgs = all.Where(m => m.Id > _lastMessageId).ToList();
         if (newMsgs.Count == 0) return;
         foreach (var m in newMsgs) { _messages.Add(m); AddMessageRow(m); }
         _lastMessageId = _messages[^1].Id;
+        // Keep active course marked as read
+        _lastReadMsgIds[_activeCourse.Id] = _lastMessageId;
+        _currentMsgIds[_activeCourse.Id]  = _lastMessageId;
         ScrollToBottom();
     }
 
@@ -294,7 +354,12 @@ public class CourseGroupChatControl : UserControl
             var all     = CourseMessageRepository.GetMessages(_activeCourse.Id, session?.Id ?? 0);
             var newMsgs = all.Where(m => m.Id > _lastMessageId).ToList();
             foreach (var m in newMsgs) { _messages.Add(m); AddMessageRow(m); }
-            if (_messages.Count > 0) _lastMessageId = _messages[^1].Id;
+            if (_messages.Count > 0)
+            {
+                _lastMessageId = _messages[^1].Id;
+                _lastReadMsgIds[_activeCourse.Id] = _lastMessageId;
+                _currentMsgIds[_activeCourse.Id]  = _lastMessageId;
+            }
             ScrollToBottom();
         }
         catch (Exception ex)
@@ -314,33 +379,38 @@ public class CourseGroupChatControl : UserControl
 
     private void AddMessageRow(CourseMessageView msg)
     {
-        bool isMe = msg.IsFromMe;
+        bool isMe      = msg.IsFromMe;
+        bool isTeacher = !isMe && msg.SenderRole == "Teacher";
+
         var row = new Panel { BackColor = Color.Transparent, Tag = isMe };
 
         if (!isMe)
             row.Controls.Add(new Label
             {
-                Text = msg.SenderDisplayName,
-                Font = new Font("Segoe UI Semibold", 8f),
-                ForeColor = Theme.Primary, AutoSize = true, Location = Point.Empty, Tag = "name"
+                Text      = msg.SenderDisplayName,
+                Font      = new Font("Segoe UI Semibold", 8f),
+                ForeColor = isTeacher ? TeacherNameColor : Theme.Primary,
+                AutoSize  = true, Location = Point.Empty, Tag = "name"
             });
 
-        var bubble = new Panel { BackColor = isMe ? Theme.Primary : Theme.Surface, Tag = "bubble" };
-        bubble.Paint += (_, e) =>
+        var bubbleBg = isMe ? Theme.Primary : isTeacher ? TeacherBubbleBg : Theme.Surface;
+        var bubble   = new Panel { BackColor = bubbleBg, Tag = "bubble" };
+        if (!isMe)
         {
-            if (!isMe)
+            var borderColor = isTeacher ? TeacherBubbleBorder : Theme.Border;
+            bubble.Paint += (_, e) =>
             {
-                using var pen = new Pen(Theme.Border);
+                using var pen = new Pen(borderColor);
                 e.Graphics.DrawRectangle(pen, 0, 0, bubble.Width - 1, bubble.Height - 1);
-            }
-        };
+            };
+        }
 
         var rtb = new RichTextBox
         {
             Text        = msg.Content, ReadOnly    = true,
             BorderStyle = BorderStyle.None,
-            BackColor   = isMe ? Theme.Primary : Theme.Surface,
-            ForeColor   = isMe ? Color.White   : Theme.TextPrimary,
+            BackColor   = bubbleBg,
+            ForeColor   = isMe ? Color.White : Theme.TextPrimary,
             Font        = Theme.BodyFont, ScrollBars = RichTextBoxScrollBars.None,
             WordWrap    = true, TabStop = false, DetectUrls = false,
             Cursor      = Cursors.IBeam, Tag = "text"

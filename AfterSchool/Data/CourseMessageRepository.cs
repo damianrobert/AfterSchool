@@ -42,6 +42,16 @@ public static class CourseMessageRepository
             new { StudentId = studentId }).ToList();
     }
 
+    public static Dictionary<int, int> GetLastMessageIds(IEnumerable<int> courseIds)
+    {
+        var ids = courseIds.ToList();
+        if (ids.Count == 0) return new();
+        using var conn = DatabaseHelper.CreateConnection();
+        var rows = conn.Query(
+            $"SELECT CourseId, MAX(Id) AS LastId FROM CourseMessages WHERE CourseId IN ({string.Join(",", ids)}) GROUP BY CourseId");
+        return rows.ToDictionary(r => (int)r.CourseId, r => (int)r.LastId);
+    }
+
     public static List<Course> GetCoursesForTeacher(string teacherName)
     {
         using var conn = DatabaseHelper.CreateConnection();
