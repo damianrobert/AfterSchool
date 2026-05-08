@@ -185,6 +185,8 @@ public class CourseGroupChatControl : UserControl
         if (session == null) return new List<Course>();
         if (session.Role == "Student" && session.StudentId.HasValue)
             return CourseMessageRepository.GetCoursesForStudent(session.StudentId.Value);
+        if (session.Role == "Teacher")
+            return CourseMessageRepository.GetCoursesForTeacher(session.FullName ?? "");
         return CourseRepository.GetAll().ToList();
     }
 

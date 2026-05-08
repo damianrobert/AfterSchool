@@ -42,6 +42,14 @@ public static class CourseMessageRepository
             new { StudentId = studentId }).ToList();
     }
 
+    public static List<Course> GetCoursesForTeacher(string teacherName)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        return conn.Query<Course>(
+            "SELECT * FROM Courses WHERE Teacher = @Teacher ORDER BY Name",
+            new { Teacher = teacherName }).ToList();
+    }
+
     private static void NotifyMembers(
         System.Data.IDbConnection conn, int courseId, int senderId,
         string senderName, string courseName)
