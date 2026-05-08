@@ -205,6 +205,18 @@ public static class DatabaseHelper
             CREATE INDEX IF NOT EXISTS IX_DirectMessages_ConvId    ON DirectMessages(ConversationId);
             CREATE INDEX IF NOT EXISTS IX_DirectMessages_SenderId  ON DirectMessages(SenderId);
             CREATE INDEX IF NOT EXISTS IX_DirectAttach_MessageId   ON DirectMessageAttachments(MessageId);
+
+            CREATE TABLE IF NOT EXISTS Notifications (
+                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId      INTEGER NOT NULL,
+                Type        TEXT    NOT NULL DEFAULT '',
+                Message     TEXT    NOT NULL DEFAULT '',
+                IsRead      INTEGER NOT NULL DEFAULT 0,
+                CreatedDate TEXT    NOT NULL DEFAULT '',
+                FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_Notifications_UserId ON Notifications(UserId);
         ";
         cmd.ExecuteNonQuery();
 

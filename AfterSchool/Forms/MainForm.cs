@@ -19,6 +19,12 @@ public class MainForm : Form
     private string _activeTitleKey = "nav.dashboard.title";
     private Bitmap? _langFlag;
 
+    // Notification bell
+    private readonly Button _bellBtn = new();
+    private readonly Label _badgeLbl = new();
+    private NotificationPanel? _notifPanel;
+    private readonly System.Windows.Forms.Timer _notifTimer = new() { Interval = 30_000 };
+
     public MainForm()
     {
         Text = "AfterSchool Management System";
@@ -75,6 +81,7 @@ public class MainForm : Form
         topBar.Controls.Add(_titleLabel);
         topBar.Controls.Add(BuildUserChip());
         topBar.Controls.Add(BuildLangPanel());
+        topBar.Controls.Add(BuildBellPanel());
 
         _content = new Panel { Dock = DockStyle.Fill, BackColor = Theme.Background, Padding = new Padding(24) };
 
@@ -95,7 +102,11 @@ public class MainForm : Form
         AddNavButton("nav.messages",  "nav.messages.title",  () => new DirectChatControl());
 
         Loc.LanguageChanged += OnLanguageChanged;
-        Load += (_, _) => _navButtons[0].PerformClick();
+        Load += (_, _) =>
+        {
+            _navButtons[0].PerformClick();
+            InitNotifications();
+        };
     }
 
     protected override void Dispose(bool disposing)
@@ -104,6 +115,7 @@ public class MainForm : Form
         {
             Loc.LanguageChanged -= OnLanguageChanged;
             _langFlag?.Dispose();
+            _notifTimer.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -297,6 +309,90 @@ public class MainForm : Form
         float rw = cw * 0.55f;
         g.FillRectangle(new SolidBrush(red), 0, (H - rw) / 2f, W, rw);
         g.FillRectangle(new SolidBrush(red), (W - rw) / 2f, 0, rw, H);
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+
+    private Panel BuildBellPanel()
+    {
+        const int PanelW = 52;
+        var panel = new Panel { Dock = DockStyle.Right, Width = PanelW, BackColor = Theme.Surface };
+
+        _bellBtn.Width  = 40;
+        _bellBtn.Height = 36;
+        _bellBtn.Left   = (PanelW - 40) / 2;
+        _bellBtn.Top    = (70 - 36) / 2;
+        _bellBtn.Text   = "🔔";
+        _bellBtn.Font   = new Font("Segoe UI Emoji", 14f);
+        _bellBtn.Cursor = Cursors.Hand;
+        _bellBtn.FlatStyle = FlatStyle.Flat;
+        _bellBtn.BackColor = Theme.Background;
+        _bellBtn.ForeColor = Theme.TextPrimary;
+        _bellBtn.FlatAppearance.BorderSize = 0;
+        _bellBtn.FlatAppearance.MouseOverBackColor = Theme.Border;
+        _bellBtn.Click += (_, _) => ToggleNotifPanel();
+
+        _badgeLbl.Size      = new Size(18, 14);
+        _badgeLbl.Location  = new Point(_bellBtn.Right - 10, _bellBtn.Top - 2);
+        _badgeLbl.Font      = new Font("Segoe UI Semibold", 7f);
+        _badgeLbl.BackColor = Color.FromArgb(239, 68, 68);
+        _badgeLbl.ForeColor = Color.White;
+        _badgeLbl.TextAlign = ContentAlignment.MiddleCenter;
+        _badgeLbl.Visible   = false;
+
+        panel.Controls.Add(_bellBtn);
+        panel.Controls.Add(_badgeLbl);
+        _badgeLbl.BringToFront();
+        return panel;
+    }
+
+    private void InitNotifications()
+    {
+        _notifPanel = new NotificationPanel(Session.Current?.Id ?? 0, RefreshBadge);
+        Controls.Add(_notifPanel);
+        _notifPanel.BringToFront();
+
+        _notifTimer.Tick += (_, _) => RefreshBadge();
+        _notifTimer.Start();
+        RefreshBadge();
+    }
+
+    private void ToggleNotifPanel()
+    {
+        if (_notifPanel == null) return;
+        if (_notifPanel.Visible)
+        {
+            _notifPanel.Visible = false;
+            return;
+        }
+
+        _notifPanel.Reload();
+        PositionNotifPanel();
+        _notifPanel.Visible = true;
+        _notifPanel.BringToFront();
+    }
+
+    private void PositionNotifPanel()
+    {
+        if (_notifPanel == null) return;
+        var screenPt = _bellBtn.PointToScreen(new Point(0, _bellBtn.Height));
+        var formPt   = PointToClient(screenPt);
+        var x = Math.Max(0, formPt.X - _notifPanel.Width + _bellBtn.Width);
+        _notifPanel.Location = new Point(x, formPt.Y);
+    }
+
+    private void RefreshBadge()
+    {
+        var count = Data.NotificationRepository.GetUnreadCount(Session.Current?.Id ?? 0);
+        if (count == 0)
+        {
+            _badgeLbl.Visible = false;
+        }
+        else
+        {
+            _badgeLbl.Text    = count > 9 ? "9+" : count.ToString();
+            _badgeLbl.Visible = true;
+        }
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────

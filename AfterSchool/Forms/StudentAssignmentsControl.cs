@@ -323,6 +323,17 @@ public class StudentAssignmentsControl : UserControl
         try
         {
             AssignmentRepository.Submit(a.Id, _studentId.Value, dlg.FileName);
+
+            // Notify the course teacher about the submission
+            var assignment = Data.AssignmentRepository.GetById(a.Id);
+            if (assignment != null)
+            {
+                var student = Data.StudentRepository.GetById(_studentId.Value);
+                var studentName = student != null ? $"{student.FirstName} {student.LastName}" : "";
+                Services.NotificationService.NotifyTeacherOfCourse(assignment.CourseId, "submission",
+                    string.Format(Services.Loc.T("notifications.msg.submission"), studentName, a.Title));
+            }
+
             LoadAssignments();
             for (int i = 0; i < _grid.Rows.Count; i++)
             {

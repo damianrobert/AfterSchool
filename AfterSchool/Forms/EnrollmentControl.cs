@@ -501,6 +501,13 @@ internal sealed class ManageEnrollmentDialog : Form
         {
             var ids = _courseList.CheckedItems.Cast<CourseListItem>().Select(c => c.CourseId).ToList();
             StudentRepository.SetEnrollments(_student.Id, ids);
+
+            // Notify teachers of courses the student was enrolled in
+            var studentName = $"{_student.FirstName} {_student.LastName}";
+            foreach (var courseId in ids)
+                Services.NotificationService.NotifyTeacherOfCourse(courseId, "enrollment",
+                    string.Format(Services.Loc.T("notifications.msg.enrollment"), studentName));
+
             DialogResult = DialogResult.OK;
             Close();
         };

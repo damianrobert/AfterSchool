@@ -373,8 +373,17 @@ internal sealed class AssignmentEditorDialog : Form
         a.Description = _desc.Text.Trim();
         a.DueDate     = _due.Value.ToString("yyyy-MM-dd");
 
-        if (_existing == null) AssignmentRepository.Insert(a);
-        else                   AssignmentRepository.Update(a);
+        if (_existing == null)
+        {
+            AssignmentRepository.Insert(a);
+            // Notify enrolled students about the new assignment
+            Services.NotificationService.NotifyEnrolledStudents(_courseId, "assignment",
+                string.Format(Services.Loc.T("notifications.msg.assignment"), a.Title));
+        }
+        else
+        {
+            AssignmentRepository.Update(a);
+        }
 
         DialogResult = DialogResult.OK;
         Close();

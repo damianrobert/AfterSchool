@@ -422,21 +422,28 @@ public class SchedulePlannerControl : UserControl
         int cardX   = 2 + colIndex * subColW;
         int cardW   = (colIndex == colCount - 1) ? Math.Max(30, colW - 2 - cardX) : subColW - 2;
 
+        bool isMilo     = slot.AddedByMilo;
         bool isSelected = _selected?.Id == slot.Id;
+
+        var bgNormal   = isMilo ? Color.FromArgb(245, 240, 255) : Color.FromArgb(239, 246, 255);
+        var bgSelected = isMilo ? Color.FromArgb(216, 200, 255) : Color.FromArgb(191, 219, 254);
+        var borderClr  = isMilo ? Color.FromArgb(196, 173, 255) : Color.FromArgb(147, 197, 253);
+        var barClr     = isMilo ? Color.FromArgb(139, 92, 246)  : Theme.Primary;
+
         var card = new Panel
         {
             Location  = new Point(cardX, top),
             Size      = new Size(cardW, height),
-            BackColor = isSelected ? Color.FromArgb(191, 219, 254) : Color.FromArgb(239, 246, 255),
+            BackColor = isSelected ? bgSelected : bgNormal,
             Padding   = new Padding(8, 3, 6, 3),
             Cursor    = Cursors.Hand,
             Tag       = slot
         };
         card.Paint += (_, e) =>
         {
-            using var pen = new Pen(Color.FromArgb(147, 197, 253));
+            using var pen = new Pen(borderClr);
             e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
-            using var bar = new SolidBrush(Theme.Primary);
+            using var bar = new SolidBrush(barClr);
             e.Graphics.FillRectangle(bar, 0, 0, 4, card.Height);
         };
 
@@ -450,6 +457,20 @@ public class SchedulePlannerControl : UserControl
                 ForeColor = Theme.TextSecondary,
                 Dock      = DockStyle.Top,
                 Height    = 15
+            });
+        }
+
+        if (isMilo && height >= 36)
+        {
+            card.Controls.Add(new Label
+            {
+                Text      = "✦ Milo",
+                Font      = new Font("Segoe UI", 7f, FontStyle.Italic),
+                ForeColor = Color.FromArgb(139, 92, 246),
+                Dock      = DockStyle.Bottom,
+                Height    = 14,
+                TextAlign = ContentAlignment.BottomRight,
+                Padding   = new Padding(0, 0, 6, 0)
             });
         }
         card.Controls.Add(new Label
@@ -523,14 +544,18 @@ public class SchedulePlannerControl : UserControl
 
     private void Select(Panel card, ScheduleView slot)
     {
-        if (_selectedCard != null)
+        if (_selectedCard != null && _selected != null)
         {
-            _selectedCard.BackColor = Color.FromArgb(239, 246, 255);
+            _selectedCard.BackColor = _selected.AddedByMilo
+                ? Color.FromArgb(245, 240, 255)
+                : Color.FromArgb(239, 246, 255);
             _selectedCard.Invalidate();
         }
         _selectedCard  = card;
         _selected      = slot;
-        card.BackColor = Color.FromArgb(191, 219, 254);
+        card.BackColor = slot.AddedByMilo
+            ? Color.FromArgb(216, 200, 255)
+            : Color.FromArgb(191, 219, 254);
         card.Invalidate();
     }
 
@@ -897,6 +922,16 @@ internal sealed class ScheduleEditorDialog : Form
 
         if (_isNew) ScheduleRepository.Insert(_slot);
         else        ScheduleRepository.Update(_slot);
+
+        // Notify enrolled students about the schedule change
+        var course2 = Data.CourseRepository.GetById(_slot.CourseId);
+        if (course2 != null)
+        {
+            var msg = _isNew
+                ? string.Format(Services.Loc.T("notifications.msg.schedule.new"), course2.Name, _slot.DayOfWeek, _slot.StartTime)
+                : string.Format(Services.Loc.T("notifications.msg.schedule.updated"), course2.Name, _slot.DayOfWeek, _slot.StartTime);
+            Services.NotificationService.NotifyEnrolledStudents(_slot.CourseId, "schedule", msg);
+        }
 
         DialogResult = DialogResult.OK;
         Close();

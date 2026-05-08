@@ -447,5 +447,16 @@
   "messages.upload.filter": "Toate fișierele (*.*)|*.*",
   "messages.upload.error": "Nu s-a putut atașa fișierul:\n\n{0}",
   "messages.download.title": "Salvează fișierul",
-  "messages.download.error": "Nu s-a putut salva fișierul:\n\n{0}"
+  "messages.download.error": "Nu s-a putut salva fișierul:\n\n{0}",
+
+  "notifications.title": "Notificări",
+  "notifications.markallread": "Marchează toate",
+  "notifications.empty": "Nu ai notificări",
+  "notifications.msg.message": "Mesaj nou de la {0}",
+  "notifications.msg.grade": "Nota ta pentru {0} a fost actualizată: {1}",
+  "notifications.msg.assignment": "Temă nouă publicată: {0}",
+  "notifications.msg.submission": "{0} a trimis "{1}"",
+  "notifications.msg.enrollment": "{0} s-a înscris la cursul tău",
+  "notifications.msg.schedule.new": "Ore noi adăugate: {0} pe {1} la {2}",
+  "notifications.msg.schedule.updated": "Program actualizat: {0} pe {1} la {2}"
 }

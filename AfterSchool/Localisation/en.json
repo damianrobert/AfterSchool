@@ -447,5 +447,16 @@
   "messages.upload.filter": "All files (*.*)|*.*",
   "messages.upload.error": "Could not attach file:\n\n{0}",
   "messages.download.title": "Save file",
-  "messages.download.error": "Could not save file:\n\n{0}"
+  "messages.download.error": "Could not save file:\n\n{0}",
+
+  "notifications.title": "Notifications",
+  "notifications.markallread": "Mark all read",
+  "notifications.empty": "You have no notifications",
+  "notifications.msg.message": "New message from {0}",
+  "notifications.msg.grade": "Your grade for {0} has been updated: {1}",
+  "notifications.msg.assignment": "New assignment posted: {0}",
+  "notifications.msg.submission": "{0} submitted "{1}"",
+  "notifications.msg.enrollment": "{0} enrolled in your course",
+  "notifications.msg.schedule.new": "New class added: {0} on {1} at {2}",
+  "notifications.msg.schedule.updated": "Schedule updated: {0} on {1} at {2}"
 }

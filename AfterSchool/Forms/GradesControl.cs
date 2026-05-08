@@ -558,6 +558,12 @@ internal sealed class GradeEditorDialog : Form
             GradedBy = _gradedBy.Text.Trim()
         };
         GradeRepository.Upsert(grade);
+
+        // Notify the student that their grade was updated
+        var courseName = _course.Name;
+        Services.NotificationService.NotifyStudentUser(grade.StudentId, "grade",
+            string.Format(Services.Loc.T("notifications.msg.grade"), courseName, grade.Score));
+
         DialogResult = DialogResult.OK;
         Close();
     }

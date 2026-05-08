@@ -94,6 +94,20 @@ public static class DirectMessageRepository
         conn.Execute(
             "UPDATE DirectConversations SET LastMessageDate = @Now WHERE Id = @Id",
             new { Now = now, Id = conversationId });
+
+        // Notify the recipient
+        var recipientId = conn.QueryFirstOrDefault<int?>(
+            "SELECT CASE WHEN User1Id = @SenderId THEN User2Id ELSE User1Id END FROM DirectConversations WHERE Id = @ConvId",
+            new { SenderId = senderId, ConvId = conversationId });
+        if (recipientId.HasValue)
+        {
+            var sender = conn.QueryFirstOrDefault<string>(
+                "SELECT CASE WHEN FullName != '' THEN FullName ELSE Username END FROM Users WHERE Id = @Id",
+                new { Id = senderId }) ?? "";
+            Services.NotificationService.Send(recipientId.Value, "message",
+                string.Format(Services.Loc.T("notifications.msg.message"), sender));
+        }
+
         return msgId;
     }
 
