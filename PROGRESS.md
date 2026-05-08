@@ -208,3 +208,55 @@ ComboBox of space and made it unclickable.
 correctly on selection change.
 
 - `dotnet build`: 0 warnings, 0 errors.
+
+---
+
+## 2026-05-08 — In-App Notification System
+
+### Architecture
+
+**Database**
+- New `Notifications` table: `UserId` (FK→Users), `Type`, `Message`, `IsRead`, `CreatedDate`.
+  Index on `UserId` for fast unread-count queries.
+- Added via `CREATE TABLE IF NOT EXISTS` in `DatabaseHelper.Initialize()` (self-healing on existing DBs).
+
+**Data layer**
+- `NotificationRepository` — `Insert`, `GetForUser(limit 30)`, `GetUnreadCount`, `MarkRead`, `MarkAllRead`.
+
+**Service layer**
+- `NotificationService` — three helpers used by trigger points:
+  - `Send(userId, type, message)` — inserts one notification; never throws.
+  - `NotifyEnrolledStudents(courseId, type, message)` — joins `StudentCourses` → `Users` to find all student accounts enrolled in a course.
+  - `NotifyTeacherOfCourse(courseId, type, message)` — looks up the teacher user by matching `FullName` to `Course.Teacher`.
+  - `NotifyStudentUser(studentId, type, message)` — finds the user account linked to a student record via `Users.StudentId`.
+
+### UI
+
+**Bell button + badge**
+- 🔔 button added to the top bar in both `MainForm` (admin/staff) and `StudentMainForm`.
+- Red badge label overlaid in the top-right corner of the bell showing unread count; hidden when count = 0.
+- Clicking the bell toggles a `NotificationPanel` dropdown (click again to close).
+- A `System.Windows.Forms.Timer` at 30-second interval refreshes the badge count automatically.
+
+**NotificationPanel**
+- Drop-down panel (340 px wide, max 420 px tall, scrollable) with:
+  - Header: "Notifications" title + "Mark all read" button.
+  - Each item: type emoji icon (💬 message / 📝 grade / 📋 assignment / 📤 submission / 🎓 enrollment / 📅 schedule), message text, relative timestamp.
+  - Unread items have a blue left-border accent and bold text; clicking marks them read.
+
+### Trigger points (when notifications fire)
+
+| Event | Trigger location | Recipient |
+|---|---|---|
+| Direct message sent | `DirectMessageRepository.SendMessage` | Conversation partner |
+| Grade updated | `GradeEditorDialog.Save` in `GradesControl` | Student linked to the grade |
+| New assignment created | `AssignmentEditorDialog.Save` in `AssignmentsControl` | All students enrolled in that course |
+| Assignment submitted | `StudentAssignmentsControl.SubmitFile` | Course teacher |
+| Student enrolled | `ManageEnrollmentDialog` ok.Click in `EnrollmentControl` | Course teachers |
+| Schedule slot added/updated | `ScheduleEditorDialog.Save` in `SchedulePlannerControl` | All enrolled students |
+
+### Localisation
+- Added 11 keys to both `en.json` and `ro.json`: `notifications.title`, `notifications.markallread`, `notifications.empty`, `notifications.msg.*`.
+
+### Build
+- `dotnet build`: 0 warnings, 0 errors.
