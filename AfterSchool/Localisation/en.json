@@ -1,19 +1,19 @@
 {
   "_note": "Keys follow the convention described in Services/Loc.cs. Add new keys here and in ro.json for every new feature.",
 
-  "nav.dashboard": "Dashboard",
+  "nav.dashboard": "🏠 Dashboard",
   "nav.dashboard.title": "Dashboard",
-  "nav.courses": "Courses",
+  "nav.courses": "📚 Courses",
   "nav.courses.title": "Course Manager",
-  "nav.schedule": "Schedule",
+  "nav.schedule": "📅 Schedule",
   "nav.schedule.title": "Weekly Schedule Planner",
-  "nav.students": "Students",
+  "nav.students": "👥 Students",
   "nav.students.title": "Enrollment Center",
-  "nav.reports": "Reports",
+  "nav.reports": "📊 Reports",
   "nav.reports.title": "Reports & Export",
-  "nav.grades": "Grades",
+  "nav.grades": "⭐ Grades",
   "nav.grades.title": "Grades & Performance",
-  "nav.tts": "Text to Speech",
+  "nav.tts": "🔊 Text to Speech",
   "nav.tts.title": "Text to Speech",
 
   "main.signedin": "Signed in as",
@@ -309,11 +309,11 @@
   "enrollment.account.created": "Account created.\n\nUsername: {0}\n\nThe student must change their password on first login.",
   "enrollment.account.created.title": "Account Created",
 
-  "nav.student.overview": "Overview",
+  "nav.student.overview": "🏠 Overview",
   "nav.student.overview.title": "My Overview",
-  "nav.student.schedule": "My Schedule",
+  "nav.student.schedule": "📅 My Schedule",
   "nav.student.schedule.title": "My Schedule",
-  "nav.student.grades": "My Grades",
+  "nav.student.grades": "⭐ My Grades",
   "nav.student.grades.title": "My Grades",
 
   "student.overview.greeting": "Hello, {0}",
@@ -338,7 +338,7 @@
   "student.grades.no_course": "You are not enrolled in a course.",
   "student.grades.no_grades": "No grades have been recorded yet.",
 
-  "nav.files": "Course Files",
+  "nav.files": "📁 Course Files",
   "nav.files.title": "Course Files",
   "files.select_course": "Select a course on the left to view its files.",
   "files.no_files": "No files have been uploaded for this course yet.",
@@ -356,7 +356,7 @@
   "files.download.title": "Save file",
   "files.download.error": "Could not save file:\n\n{0}",
 
-  "nav.student.files": "Course Files",
+  "nav.student.files": "📁 Course Files",
   "nav.student.files.title": "Course Files",
   "student.files.heading": "Course Materials",
   "student.files.subheading": "Click a course to view its files.",
@@ -367,7 +367,7 @@
   "student.files.no_files": "No files have been uploaded for this course yet.",
   "student.files.btn.download": "Download",
 
-  "nav.assignments": "Assignments",
+  "nav.assignments": "📋 Assignments",
   "nav.assignments.title": "Assignments",
   "assignments.select_course": "Select a course on the left to view its assignments.",
   "assignments.no_assignments": "No assignments have been created for this course yet.",
@@ -400,7 +400,7 @@
   "assignments.download.title": "Save file",
   "assignments.download.error": "Could not save file:\n\n{0}",
 
-  "nav.student.assignments": "Assignments",
+  "nav.student.assignments": "📋 Assignments",
   "nav.student.assignments.title": "My Assignments",
   "student.assignments.no_course": "You are not enrolled in a course.",
   "student.assignments.no_assignments": "No assignments have been posted for your course yet.",
@@ -420,7 +420,7 @@
   "student.assignments.description": "Description",
   "student.assignments.no_description": "No description provided.",
 
-  "nav.chat": "Milo AI",
+  "nav.chat": "🤖 Milo AI",
   "nav.chat.title": "Milo — AI Assistant",
   "chat.no_conversation": "Select a chat or start a new one",
   "chat.no_history": "No previous chats",
@@ -431,7 +431,7 @@
   "chat.delete.confirm": "Delete this conversation?",
   "chat.delete.title": "Confirm delete",
 
-  "nav.messages": "Messages",
+  "nav.messages": "💬 Messages",
   "nav.messages.title": "Direct Messages",
   "messages.no_conversation": "Search for a user or select a conversation",
   "messages.no_history": "No conversations yet",
@@ -461,7 +461,7 @@
   "notifications.msg.schedule.updated": "Schedule updated: {0} on {1} at {2}",
   "notifications.msg.group_message": "New message in {0} from {1}",
 
-  "nav.coursechat": "Course Chat",
+  "nav.coursechat": "🗨️ Course Chat",
   "nav.coursechat.title": "Course Group Chats",
   "coursechat.select": "Select a course to open its chat",
   "coursechat.no_courses": "You are not enrolled in any course",

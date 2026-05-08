@@ -1,19 +1,19 @@
 {
   "_note": "Cheile urmează convenția descrisă în Services/Loc.cs. Adaugă chei noi aici și în en.json pentru fiecare funcționalitate nouă.",
 
-  "nav.dashboard": "Panou principal",
+  "nav.dashboard": "🏠 Panou principal",
   "nav.dashboard.title": "Panou principal",
-  "nav.courses": "Cursuri",
+  "nav.courses": "📚 Cursuri",
   "nav.courses.title": "Gestionar cursuri",
-  "nav.schedule": "Program",
+  "nav.schedule": "📅 Program",
   "nav.schedule.title": "Planificator săptămânal",
-  "nav.students": "Elevi",
+  "nav.students": "👥 Elevi",
   "nav.students.title": "Centru de înscriere",
-  "nav.reports": "Rapoarte",
+  "nav.reports": "📊 Rapoarte",
   "nav.reports.title": "Rapoarte și export",
-  "nav.grades": "Note",
+  "nav.grades": "⭐ Note",
   "nav.grades.title": "Note și performanță",
-  "nav.tts": "Sinteză vocală",
+  "nav.tts": "🔊 Sinteză vocală",
   "nav.tts.title": "Sinteză vocală",
 
   "main.signedin": "Autentificat ca",
@@ -309,11 +309,11 @@
   "enrollment.account.created": "Cont creat.\n\nUtilizator: {0}\n\nElevul trebuie să schimbe parola la prima autentificare.",
   "enrollment.account.created.title": "Cont creat",
 
-  "nav.student.overview": "Prezentare",
+  "nav.student.overview": "🏠 Prezentare",
   "nav.student.overview.title": "Prezentare generală",
-  "nav.student.schedule": "Programul meu",
+  "nav.student.schedule": "📅 Programul meu",
   "nav.student.schedule.title": "Programul meu",
-  "nav.student.grades": "Notele mele",
+  "nav.student.grades": "⭐ Notele mele",
   "nav.student.grades.title": "Notele mele",
 
   "student.overview.greeting": "Bună ziua, {0}",
@@ -338,7 +338,7 @@
   "student.grades.no_course": "Nu ești înscris la niciun curs.",
   "student.grades.no_grades": "Nu au fost înregistrate note încă.",
 
-  "nav.files": "Fișiere cursuri",
+  "nav.files": "📁 Fișiere cursuri",
   "nav.files.title": "Fișiere cursuri",
   "files.select_course": "Selectați un curs din stânga pentru a vedea fișierele sale.",
   "files.no_files": "Nu au fost încărcate fișiere pentru acest curs.",
@@ -356,7 +356,7 @@
   "files.download.title": "Salvează fișierul",
   "files.download.error": "Nu s-a putut salva fișierul:\n\n{0}",
 
-  "nav.student.files": "Fișierele cursului",
+  "nav.student.files": "📁 Fișierele cursului",
   "nav.student.files.title": "Fișierele cursului",
   "student.files.heading": "Materiale de curs",
   "student.files.subheading": "Apasă pe un curs pentru a vedea fișierele.",
@@ -367,7 +367,7 @@
   "student.files.no_files": "Nu au fost încărcate fișiere pentru acest curs.",
   "student.files.btn.download": "Descarcă",
 
-  "nav.assignments": "Teme",
+  "nav.assignments": "📋 Teme",
   "nav.assignments.title": "Teme și sarcini",
   "assignments.select_course": "Selectați un curs din stânga pentru a vedea temele sale.",
   "assignments.no_assignments": "Nu au fost create teme pentru acest curs.",
@@ -400,7 +400,7 @@
   "assignments.download.title": "Salvează fișierul",
   "assignments.download.error": "Nu s-a putut salva fișierul:\n\n{0}",
 
-  "nav.student.assignments": "Teme",
+  "nav.student.assignments": "📋 Teme",
   "nav.student.assignments.title": "Temele mele",
   "student.assignments.no_course": "Nu ești înscris la niciun curs.",
   "student.assignments.filter.todo": "De făcut",
@@ -420,7 +420,7 @@
   "student.assignments.description": "Descriere",
   "student.assignments.no_description": "Nicio descriere furnizată.",
 
-  "nav.chat": "Milo AI",
+  "nav.chat": "🤖 Milo AI",
   "nav.chat.title": "Milo — Asistent AI",
   "chat.no_conversation": "Selectează o conversație sau începe una nouă",
   "chat.no_history": "Nicio conversație anterioară",
@@ -431,7 +431,7 @@
   "chat.delete.confirm": "Ștergi această conversație?",
   "chat.delete.title": "Confirmare ștergere",
 
-  "nav.messages": "Mesaje",
+  "nav.messages": "💬 Mesaje",
   "nav.messages.title": "Mesaje directe",
   "messages.no_conversation": "Caută un utilizator sau selectează o conversație",
   "messages.no_history": "Nicio conversație încă",
@@ -461,7 +461,7 @@
   "notifications.msg.schedule.updated": "Program actualizat: {0} pe {1} la {2}",
   "notifications.msg.group_message": "Mesaj nou în {0} de la {1}",
 
-  "nav.coursechat": "Chat Curs",
+  "nav.coursechat": "🗨️ Chat Curs",
   "nav.coursechat.title": "Chat de grup pentru cursuri",
   "coursechat.select": "Selectează un curs pentru a deschide chat-ul",
   "coursechat.no_courses": "Nu ești înscris la niciun curs",
