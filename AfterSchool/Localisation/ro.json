@@ -429,5 +429,23 @@
   "chat.btn.delete": "Șterge",
   "chat.typing": "Milo se gândește…",
   "chat.delete.confirm": "Ștergi această conversație?",
-  "chat.delete.title": "Confirmare ștergere"
+  "chat.delete.title": "Confirmare ștergere",
+
+  "nav.messages": "Mesaje",
+  "nav.messages.title": "Mesaje directe",
+  "messages.no_conversation": "Caută un utilizator sau selectează o conversație",
+  "messages.no_history": "Nicio conversație încă",
+  "messages.search.placeholder": "Caută utilizatori…",
+  "messages.search.no_results": "Niciun utilizator găsit",
+  "messages.input.placeholder": "Scrie un mesaj…",
+  "messages.btn.send": "Trimite",
+  "messages.btn.delete": "Șterge",
+  "messages.btn.attach": "Atașează",
+  "messages.delete.confirm": "Ștergi această conversație și toate mesajele ei?",
+  "messages.delete.title": "Confirmare ștergere",
+  "messages.upload.title": "Selectează fișierul de atașat",
+  "messages.upload.filter": "Toate fișierele (*.*)|*.*",
+  "messages.upload.error": "Nu s-a putut atașa fișierul:\n\n{0}",
+  "messages.download.title": "Salvează fișierul",
+  "messages.download.error": "Nu s-a putut salva fișierul:\n\n{0}"
 }

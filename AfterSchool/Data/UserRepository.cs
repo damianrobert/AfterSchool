@@ -74,6 +74,19 @@ public static class UserRepository
     public static string DisplayNameOf(User user) =>
         string.IsNullOrWhiteSpace(user.FullName) ? user.Username : user.FullName;
 
+    public static IEnumerable<User> Search(string term, int excludeUserId)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        return conn.Query<User>(@"
+            SELECT * FROM Users
+            WHERE IsActive = 1
+              AND Id != @ExcludeId
+              AND (FullName LIKE @Term COLLATE NOCASE OR Username LIKE @Term COLLATE NOCASE)
+            ORDER BY FullName, Username
+            LIMIT 30",
+            new { Term = $"%{term}%", ExcludeId = excludeUserId }).ToList();
+    }
+
     public static User? Authenticate(string username, string password)
     {
         var user = GetByUsername(username);

@@ -429,5 +429,23 @@
   "chat.btn.delete": "Delete",
   "chat.typing": "Milo is thinking…",
   "chat.delete.confirm": "Delete this conversation?",
-  "chat.delete.title": "Confirm delete"
+  "chat.delete.title": "Confirm delete",
+
+  "nav.messages": "Messages",
+  "nav.messages.title": "Direct Messages",
+  "messages.no_conversation": "Search for a user or select a conversation",
+  "messages.no_history": "No conversations yet",
+  "messages.search.placeholder": "Search users…",
+  "messages.search.no_results": "No users found",
+  "messages.input.placeholder": "Type a message…",
+  "messages.btn.send": "Send",
+  "messages.btn.delete": "Delete",
+  "messages.btn.attach": "Attach",
+  "messages.delete.confirm": "Delete this conversation and all its messages?",
+  "messages.delete.title": "Confirm delete",
+  "messages.upload.title": "Select file to attach",
+  "messages.upload.filter": "All files (*.*)|*.*",
+  "messages.upload.error": "Could not attach file:\n\n{0}",
+  "messages.download.title": "Save file",
+  "messages.download.error": "Could not save file:\n\n{0}"
 }

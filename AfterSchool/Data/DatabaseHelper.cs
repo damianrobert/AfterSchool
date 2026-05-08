@@ -169,6 +169,42 @@ public static class DatabaseHelper
 
             CREATE INDEX IF NOT EXISTS IX_ChatConversations_UserId   ON ChatConversations(UserId);
             CREATE INDEX IF NOT EXISTS IX_ChatMessages_ConvId        ON ChatMessages(ConversationId);
+
+            CREATE TABLE IF NOT EXISTS DirectConversations (
+                Id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                User1Id         INTEGER NOT NULL,
+                User2Id         INTEGER NOT NULL,
+                CreatedDate     TEXT    NOT NULL DEFAULT '',
+                LastMessageDate TEXT    NOT NULL DEFAULT '',
+                UNIQUE(User1Id, User2Id),
+                FOREIGN KEY (User1Id) REFERENCES Users(Id) ON DELETE CASCADE,
+                FOREIGN KEY (User2Id) REFERENCES Users(Id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS DirectMessages (
+                Id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                ConversationId INTEGER NOT NULL,
+                SenderId       INTEGER NOT NULL,
+                Content        TEXT    NOT NULL DEFAULT '',
+                SentDate       TEXT    NOT NULL DEFAULT '',
+                FOREIGN KEY (ConversationId) REFERENCES DirectConversations(Id) ON DELETE CASCADE,
+                FOREIGN KEY (SenderId)       REFERENCES Users(Id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS DirectMessageAttachments (
+                Id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                MessageId  INTEGER NOT NULL,
+                FileName   TEXT    NOT NULL,
+                StoredName TEXT    NOT NULL,
+                FileSize   INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (MessageId) REFERENCES DirectMessages(Id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_DirectConv_User1Id       ON DirectConversations(User1Id);
+            CREATE INDEX IF NOT EXISTS IX_DirectConv_User2Id       ON DirectConversations(User2Id);
+            CREATE INDEX IF NOT EXISTS IX_DirectMessages_ConvId    ON DirectMessages(ConversationId);
+            CREATE INDEX IF NOT EXISTS IX_DirectMessages_SenderId  ON DirectMessages(SenderId);
+            CREATE INDEX IF NOT EXISTS IX_DirectAttach_MessageId   ON DirectMessageAttachments(MessageId);
         ";
         cmd.ExecuteNonQuery();
 
@@ -181,6 +217,7 @@ public static class DatabaseHelper
         TryAlter(conn, "ALTER TABLE Courses ADD COLUMN GradingScale TEXT NOT NULL DEFAULT 'Numeric';");
         TryAlter(conn, "ALTER TABLE Users ADD COLUMN MustChangePassword INTEGER NOT NULL DEFAULT 0;");
         TryAlter(conn, "ALTER TABLE Users ADD COLUMN StudentId INTEGER REFERENCES Students(Id) ON DELETE SET NULL;");
+        TryAlter(conn, "ALTER TABLE Schedule ADD COLUMN AddedByMilo INTEGER NOT NULL DEFAULT 0;");
         RecreateSubmissionsWithoutUnique(conn);
         MigrateEnrollmentsToJunctionTable(conn);
     }
