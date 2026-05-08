@@ -24,7 +24,7 @@ public class StudentMainForm : Form
         WindowState = FormWindowState.Maximized;
         BackColor = Theme.Background;
         Font = Theme.BodyFont;
-        Icon = SystemIcons.Application;
+        Icon = AppLogo.CreateWindowIcon();
 
         BuildLayout();
 
@@ -40,10 +40,10 @@ public class StudentMainForm : Form
         var brand = new Panel { Dock = DockStyle.Top, Height = 70, BackColor = Color.FromArgb(15, 23, 42) };
         brand.Paint += (_, e) =>
         {
-            using var titleFont = new Font("Segoe UI Semibold", 14f);
-            using var subFont   = new Font("Segoe UI", 8.5f);
-            e.Graphics.DrawString("AfterSchool",    titleFont, Brushes.White,                             new PointF(20, 14));
-            e.Graphics.DrawString("Student Portal", subFont,   new SolidBrush(Color.FromArgb(148,163,184)), new PointF(21, 38));
+            AppLogo.DrawHorizontalLogo(e.Graphics, 36, 14, 0, brand.Height);
+            using var subFont = new Font("Segoe UI", 8.5f);
+            using var subBrush = new SolidBrush(Color.FromArgb(148, 163, 184));
+            e.Graphics.DrawString("Student Portal", subFont, subBrush, new PointF(64, 42));
         };
 
         var navStack = new FlowLayoutPanel
