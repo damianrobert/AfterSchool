@@ -147,7 +147,10 @@ public class AssignmentsControl : UserControl
 
     private void LoadCourses()
     {
-        _courses = CourseRepository.GetAll().ToList();
+        _courses = (Session.Current?.Role == "Teacher"
+            ? CourseRepository.GetByTeacher(Session.Current.FullName)
+            : CourseRepository.GetAll()).ToList();
+
         _courseList.Items.Clear();
         foreach (var c in _courses) _courseList.Items.Add(c.Name);
         ShowEmpty(Loc.T("assignments.select_course"));

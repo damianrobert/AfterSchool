@@ -129,7 +129,10 @@ public class GradesControl : UserControl
 
     private void LoadCourses()
     {
-        _courses = CourseRepository.GetAll().ToList();
+        _courses = (Session.Current?.Role == "Teacher"
+            ? CourseRepository.GetByTeacher(Session.Current.FullName)
+            : CourseRepository.GetAll()).ToList();
+
         _courseCombo.Items.Clear();
         foreach (var c in _courses)
             _courseCombo.Items.Add(c);

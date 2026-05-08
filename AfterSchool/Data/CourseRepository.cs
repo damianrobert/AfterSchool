@@ -11,6 +11,14 @@ public static class CourseRepository
         return conn.Query<Course>("SELECT * FROM Courses ORDER BY Name").ToList();
     }
 
+    public static IEnumerable<Course> GetByTeacher(string teacherName)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        return conn.Query<Course>(
+            "SELECT * FROM Courses WHERE Teacher = @Teacher ORDER BY Name",
+            new { Teacher = teacherName }).ToList();
+    }
+
     public static Course? GetById(int id)
     {
         using var conn = DatabaseHelper.CreateConnection();
