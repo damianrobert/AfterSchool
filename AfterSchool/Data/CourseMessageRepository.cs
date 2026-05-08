@@ -42,6 +42,25 @@ public static class CourseMessageRepository
             new { StudentId = studentId }).ToList();
     }
 
+    public static Dictionary<int, int> GetLastReadMsgIds(int userId)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        var rows = conn.Query(
+            "SELECT CourseId, LastMsgId FROM CourseLastRead WHERE UserId = @UserId",
+            new { UserId = userId });
+        return rows.ToDictionary(r => (int)r.CourseId, r => (int)r.LastMsgId);
+    }
+
+    public static void MarkCourseRead(int courseId, int userId, int lastMsgId)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        conn.Execute(@"
+            INSERT INTO CourseLastRead (CourseId, UserId, LastMsgId)
+            VALUES (@CourseId, @UserId, @LastMsgId)
+            ON CONFLICT(CourseId, UserId) DO UPDATE SET LastMsgId = @LastMsgId",
+            new { CourseId = courseId, UserId = userId, LastMsgId = lastMsgId });
+    }
+
     public static Dictionary<int, int> GetLastMessageIds(IEnumerable<int> courseIds)
     {
         var ids = courseIds.ToList();

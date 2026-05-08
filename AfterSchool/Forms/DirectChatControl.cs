@@ -25,7 +25,8 @@ public class DirectChatControl : UserControl
     private readonly List<DirectMessageView> _messages      = new();
     private readonly List<Panel>             _bubbleRows    = new();
     private readonly List<string>            _pendingFiles  = new();
-    private readonly Dictionary<int, string> _lastReadDates = new(); // convId -> last-read date
+    private readonly Dictionary<int, string> _lastReadDates   = new(); // convId -> last-read date (from DB)
+    private bool _readDatesLoaded;
     private bool _sending;
     private bool _relayouting;
     private readonly System.Windows.Forms.Timer _pollTimer = new() { Interval = 10_000 };
@@ -250,14 +251,17 @@ public class DirectChatControl : UserControl
 
     private void LoadConversationList()
     {
-        _convList.Controls.Clear();
-        var convs = DirectMessageRepository.GetConversations(Session.Current?.Id ?? 0);
-        foreach (var c in convs)
+        var userId = Session.Current?.Id ?? 0;
+        if (!_readDatesLoaded && userId > 0)
         {
-            if (!_lastReadDates.ContainsKey(c.Id))
-                _lastReadDates[c.Id] = c.LastMessageDate; // first time = treat as read
-            _convList.Controls.Add(BuildConvItem(c));
+            foreach (var (convId, date) in DirectMessageRepository.GetLastReadDates(userId))
+                _lastReadDates[convId] = date;
+            _readDatesLoaded = true;
         }
+
+        _convList.Controls.Clear();
+        var convs = DirectMessageRepository.GetConversations(userId);
+        foreach (var c in convs) _convList.Controls.Add(BuildConvItem(c));
         if (_convList.Controls.Count == 0)
             _convList.Controls.Add(new Label
             {
@@ -276,8 +280,9 @@ public class DirectChatControl : UserControl
     private Panel BuildConvItem(DirectConversationView c)
     {
         bool hasUnread = c.Id != _active?.Id
-                         && _lastReadDates.TryGetValue(c.Id, out var readDate)
-                         && string.Compare(c.LastMessageDate, readDate, StringComparison.Ordinal) > 0;
+                         && !string.IsNullOrEmpty(c.LastMessageDate)
+                         && (!_lastReadDates.TryGetValue(c.Id, out var readDate)   // never opened
+                             || string.Compare(c.LastMessageDate, readDate, StringComparison.Ordinal) > 0);
 
         var item = new Panel
         {
@@ -403,7 +408,10 @@ public class DirectChatControl : UserControl
     private void LoadConversation(DirectConversationView c)
     {
         _active = c;
-        _lastReadDates[c.Id] = c.LastMessageDate; // mark as read before rebuilding list
+        var now = DateTime.UtcNow.ToString("O");
+        _lastReadDates[c.Id] = now;
+        var userId = Session.Current?.Id ?? 0;
+        if (userId > 0) DirectMessageRepository.MarkConversationRead(c.Id, userId, now);
         _headerLbl.Text     = c.DisplayName;
         _headerRoleLbl.Text = c.OtherUserRole;
         SetInputEnabled(true);

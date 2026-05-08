@@ -230,6 +230,22 @@ public static class DatabaseHelper
 
             CREATE INDEX IF NOT EXISTS IX_CourseMessages_CourseId ON CourseMessages(CourseId);
             CREATE INDEX IF NOT EXISTS IX_CourseMessages_SenderId  ON CourseMessages(SenderId);
+
+            CREATE TABLE IF NOT EXISTS DirectConversationReads (
+                ConversationId INTEGER NOT NULL,
+                UserId         INTEGER NOT NULL,
+                LastReadDate   TEXT    NOT NULL DEFAULT '',
+                PRIMARY KEY (ConversationId, UserId),
+                FOREIGN KEY (ConversationId) REFERENCES DirectConversations(Id) ON DELETE CASCADE,
+                FOREIGN KEY (UserId)         REFERENCES Users(Id)               ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS CourseLastRead (
+                CourseId  INTEGER NOT NULL,
+                UserId    INTEGER NOT NULL,
+                LastMsgId INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (CourseId, UserId)
+            );
         ";
         cmd.ExecuteNonQuery();
 

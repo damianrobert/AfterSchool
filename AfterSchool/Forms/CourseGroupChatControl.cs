@@ -21,8 +21,9 @@ public class CourseGroupChatControl : UserControl
     private readonly List<CourseMessageView> _messages        = new();
     private readonly List<Panel>             _bubbleRows      = new();
     private readonly List<Course>            _accessibleCourses = new();
-    private readonly Dictionary<int, int>    _currentMsgIds   = new(); // latest msg ID per course
-    private readonly Dictionary<int, int>    _lastReadMsgIds  = new(); // last read msg ID per course
+    private readonly Dictionary<int, int>    _currentMsgIds   = new(); // latest msg ID per course (from DB)
+    private readonly Dictionary<int, int>    _lastReadMsgIds  = new(); // last read msg ID per course (from DB)
+    private bool _readStateLoaded;
     private bool _sending;
     private bool _relayouting;
     private int  _lastMessageId;
@@ -175,18 +176,21 @@ public class CourseGroupChatControl : UserControl
 
     private void LoadCourseList()
     {
+        var userId = Session.Current?.Id ?? 0;
+        if (!_readStateLoaded && userId > 0)
+        {
+            foreach (var (courseId, msgId) in CourseMessageRepository.GetLastReadMsgIds(userId))
+                _lastReadMsgIds[courseId] = msgId;
+            _readStateLoaded = true;
+        }
+
         _accessibleCourses.Clear();
         _accessibleCourses.AddRange(GetAccessibleCourses());
 
-        // Batch-fetch latest message IDs for badge tracking
+        // Batch-fetch latest message IDs for badge comparisons
         var latestIds = CourseMessageRepository.GetLastMessageIds(_accessibleCourses.Select(c => c.Id));
         foreach (var c in _accessibleCourses)
-        {
-            var latestId = latestIds.GetValueOrDefault(c.Id, 0);
-            _currentMsgIds[c.Id] = latestId;
-            if (!_lastReadMsgIds.ContainsKey(c.Id))
-                _lastReadMsgIds[c.Id] = latestId; // first time = treat as read
-        }
+            _currentMsgIds[c.Id] = latestIds.GetValueOrDefault(c.Id, 0);
 
         RenderCourseList();
     }
@@ -218,8 +222,8 @@ public class CourseGroupChatControl : UserControl
     private Panel BuildCourseItem(Course c)
     {
         bool hasUnread = _activeCourse?.Id != c.Id
-                         && _currentMsgIds.TryGetValue(c.Id, out var cur)
-                         && cur > _lastReadMsgIds.GetValueOrDefault(c.Id, 0);
+                         && _currentMsgIds.TryGetValue(c.Id, out var cur) && cur > 0
+                         && cur > _lastReadMsgIds.GetValueOrDefault(c.Id, -1);
 
         var item = new Panel
         {
@@ -275,9 +279,11 @@ public class CourseGroupChatControl : UserControl
         _messages.AddRange(CourseMessageRepository.GetMessages(c.Id, Session.Current?.Id ?? 0));
         _lastMessageId = _messages.Count > 0 ? _messages[^1].Id : 0;
 
-        // Mark as read
+        // Mark as read in memory and DB
         _lastReadMsgIds[c.Id] = _lastMessageId;
         _currentMsgIds[c.Id]  = _lastMessageId;
+        var userId = Session.Current?.Id ?? 0;
+        if (userId > 0) CourseMessageRepository.MarkCourseRead(c.Id, userId, _lastMessageId);
 
         foreach (var m in _messages) AddMessageRow(m);
         ScrollToBottom();
@@ -308,9 +314,10 @@ public class CourseGroupChatControl : UserControl
         if (newMsgs.Count == 0) return;
         foreach (var m in newMsgs) { _messages.Add(m); AddMessageRow(m); }
         _lastMessageId = _messages[^1].Id;
-        // Keep active course marked as read
         _lastReadMsgIds[_activeCourse.Id] = _lastMessageId;
         _currentMsgIds[_activeCourse.Id]  = _lastMessageId;
+        var userId = Session.Current?.Id ?? 0;
+        if (userId > 0) CourseMessageRepository.MarkCourseRead(_activeCourse.Id, userId, _lastMessageId);
         ScrollToBottom();
     }
 

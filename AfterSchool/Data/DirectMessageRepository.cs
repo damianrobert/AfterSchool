@@ -161,6 +161,25 @@ public static class DirectMessageRepository
         }
     }
 
+    public static Dictionary<int, string> GetLastReadDates(int userId)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        var rows = conn.Query(
+            "SELECT ConversationId, LastReadDate FROM DirectConversationReads WHERE UserId = @UserId",
+            new { UserId = userId });
+        return rows.ToDictionary(r => (int)r.ConversationId, r => (string)r.LastReadDate);
+    }
+
+    public static void MarkConversationRead(int conversationId, int userId, string date)
+    {
+        using var conn = DatabaseHelper.CreateConnection();
+        conn.Execute(@"
+            INSERT INTO DirectConversationReads (ConversationId, UserId, LastReadDate)
+            VALUES (@ConvId, @UserId, @Date)
+            ON CONFLICT(ConversationId, UserId) DO UPDATE SET LastReadDate = @Date",
+            new { ConvId = conversationId, UserId = userId, Date = date });
+    }
+
     public static string FormatSize(long bytes) =>
         bytes < 1024           ? $"{bytes} B"
         : bytes < 1024 * 1024  ? $"{bytes / 1024.0:F1} KB"
