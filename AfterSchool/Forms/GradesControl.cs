@@ -701,7 +701,7 @@ internal sealed class TranscriptDialog : Form
         if (_grid.Columns["Scale"]  is { } sc) sc.HeaderText = Loc.T("grades.col.scale");
         if (_grid.Columns["Score"]  is { } s)  s.HeaderText  = Loc.T("grades.col.score");
         if (_grid.Columns["Notes"]  is { } n)  n.HeaderText  = Loc.T("grades.col.notes");
-        if (_grid.Columns["Date"]   is { } d) { d.HeaderText = Loc.T("grades.col.date"); d.Width = 100; d.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; }
+        if (_grid.Columns["Date"]   is { } d) { d.HeaderText = Loc.T("grades.col.date"); d.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; d.Width = 100; }
     }
 
     private void ExportTranscript()
