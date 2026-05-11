@@ -32,7 +32,8 @@ public class SchedulePlannerControl : UserControl
     private readonly Button  _newBtn     = new();
     private readonly Button  _editBtn    = new();
     private readonly Button  _deleteBtn  = new();
-    private readonly Button  _roomsBtn   = new();
+    private readonly Button  _roomsBtn      = new();
+    private readonly Button  _exportCalBtn  = new();
     private readonly Panel   _calArea    = new();
     private readonly ToolTip _cardTip    = new() { AutoPopDelay = 6000, ShowAlways = true };
 
@@ -57,27 +58,30 @@ public class SchedulePlannerControl : UserControl
         // Action toolbar
         var toolbar = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.Surface };
 
-        _newBtn.Text    = Loc.T("schedule.btn.add");
-        _editBtn.Text   = Loc.T("common.edit");
-        _deleteBtn.Text = Loc.T("common.delete");
-        _roomsBtn.Text  = Loc.T("schedule.btn.manage_rooms");
+        _newBtn.Text       = Loc.T("schedule.btn.add");
+        _editBtn.Text      = Loc.T("common.edit");
+        _deleteBtn.Text    = Loc.T("common.delete");
+        _roomsBtn.Text     = Loc.T("schedule.btn.manage_rooms");
+        _exportCalBtn.Text = Loc.T("schedule.btn.export_calendar");
 
         Theme.StyleButton(_newBtn, primary: true);
         Theme.StyleButton(_editBtn);
         Theme.StyleButton(_deleteBtn, danger: true);
         Theme.StyleButton(_roomsBtn);
+        Theme.StyleButton(_exportCalBtn);
 
-        _newBtn.Click    += (_, _) => OpenEditor(null);
-        _editBtn.Click   += (_, _) => { if (_selected != null) OpenEditor(_selected); };
-        _deleteBtn.Click += (_, _) => DeleteSelected();
-        _roomsBtn.Click  += (_, _) => { using var d = new RoomsDialog(); d.ShowDialog(this); };
+        _newBtn.Click       += (_, _) => OpenEditor(null);
+        _editBtn.Click      += (_, _) => { if (_selected != null) OpenEditor(_selected); };
+        _deleteBtn.Click    += (_, _) => DeleteSelected();
+        _roomsBtn.Click     += (_, _) => { using var d = new RoomsDialog(); d.ShowDialog(this); };
+        _exportCalBtn.Click += (_, _) => ExportToCalendar();
 
         var actionFlow = new FlowLayoutPanel
         {
             Dock = DockStyle.Right, FlowDirection = FlowDirection.RightToLeft,
-            Width = 560, Height = 52, BackColor = Theme.Surface
+            Width = 700, Height = 52, BackColor = Theme.Surface
         };
-        actionFlow.Controls.AddRange(new Control[] { _deleteBtn, _editBtn, _newBtn, _roomsBtn });
+        actionFlow.Controls.AddRange(new Control[] { _deleteBtn, _editBtn, _newBtn, _roomsBtn, _exportCalBtn });
 
         var hint = new Label
         {
@@ -571,6 +575,24 @@ public class SchedulePlannerControl : UserControl
         if (r != DialogResult.Yes) return;
         ScheduleRepository.Delete(_selected.Id);
         ReloadSlots();
+    }
+
+    private void ExportToCalendar()
+    {
+        try
+        {
+            var file = Services.ICalExportService.ExportSchedule();
+            var msg  = string.Format(Loc.T("schedule.export_cal.success"), file);
+            var res  = MessageBox.Show(msg, Loc.T("schedule.export_cal.title"),
+                MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+            if (res == DialogResult.Yes)
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(file) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(string.Format(Loc.T("schedule.export_cal.error"), ex.Message),
+                Loc.T("schedule.export_cal.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void OpenEditor(ScheduleView? existing)
