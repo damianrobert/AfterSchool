@@ -1,4 +1,5 @@
 using AfterSchool.Models;
+using AfterSchool.Services;
 using Dapper;
 
 namespace AfterSchool.Data;
@@ -29,10 +30,12 @@ public static class CourseRepository
     public static int Insert(Course course)
     {
         using var conn = DatabaseHelper.CreateConnection();
-        return conn.ExecuteScalar<int>(@"
+        var id = conn.ExecuteScalar<int>(@"
             INSERT INTO Courses (Name, Teacher, Description, Capacity, GradingScale)
             VALUES (@Name, @Teacher, @Description, @Capacity, @GradingScale);
             SELECT last_insert_rowid();", course);
+        AuditService.Log("Create", "Course", id.ToString(), course.Name);
+        return id;
     }
 
     public static void Update(Course course)
@@ -43,12 +46,14 @@ public static class CourseRepository
             SET Name = @Name, Teacher = @Teacher, Description = @Description,
                 Capacity = @Capacity, GradingScale = @GradingScale
             WHERE Id = @Id", course);
+        AuditService.Log("Update", "Course", course.Id.ToString(), course.Name);
     }
 
     public static void Delete(int id)
     {
         using var conn = DatabaseHelper.CreateConnection();
         conn.Execute("DELETE FROM Courses WHERE Id = @Id", new { Id = id });
+        AuditService.Log("Delete", "Course", id.ToString());
     }
 
     public static int GetEnrolledCount(int courseId)

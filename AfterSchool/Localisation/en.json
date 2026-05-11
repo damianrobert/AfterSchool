@@ -471,5 +471,36 @@
   "coursechat.no_courses": "You are not enrolled in any course",
   "coursechat.input.placeholder": "Message the group…",
   "coursechat.btn.send": "Send",
-  "coursechat.teacher_label": "Teacher: {0}"
+  "coursechat.teacher_label": "Teacher: {0}",
+
+  "nav.admin": "⚙️ Admin",
+  "nav.admin.title": "Administration",
+
+  "admin.backup.title": "Database Backup & Restore",
+  "admin.backup.btn_create": "Create Backup",
+  "admin.backup.btn_restore": "Restore from Backup",
+  "admin.backup.status_ok": "Backup saved: {0}",
+  "admin.backup.status_err": "Backup failed.",
+  "admin.backup.success_msg": "Backup created successfully:\n{0}",
+  "admin.backup.err_title": "Backup Error",
+
+  "admin.restore.title": "Restore Database",
+  "admin.restore.dialog_title": "Select backup file to restore",
+  "admin.restore.confirm_title": "Confirm Restore",
+  "admin.restore.confirm_msg": "This will replace the current database with the selected backup.\nAll data since the backup was made will be lost.\n\nAre you sure you want to continue?",
+  "admin.restore.success_msg": "Database restored successfully. Some pages may show stale data until you navigate away and back.",
+  "admin.restore.err_title": "Restore Error",
+
+  "admin.audit.title": "Activity Log",
+  "admin.audit.col.time": "Timestamp",
+  "admin.audit.col.user": "User",
+  "admin.audit.col.action": "Action",
+  "admin.audit.col.entity": "Entity Type",
+  "admin.audit.col.id": "ID",
+  "admin.audit.col.details": "Details",
+  "admin.audit.filter.from": "From",
+  "admin.audit.filter.to": "To",
+  "admin.audit.filter.all_actions": "All Actions",
+  "admin.audit.filter.user": "Search user…",
+  "admin.audit.export_success": "Audit log exported to:\n{0}"
 }

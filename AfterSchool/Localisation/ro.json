@@ -471,5 +471,36 @@
   "coursechat.no_courses": "Nu ești înscris la niciun curs",
   "coursechat.input.placeholder": "Scrie un mesaj în grup…",
   "coursechat.btn.send": "Trimite",
-  "coursechat.teacher_label": "Profesor: {0}"
+  "coursechat.teacher_label": "Profesor: {0}",
+
+  "nav.admin": "⚙️ Admin",
+  "nav.admin.title": "Administrare",
+
+  "admin.backup.title": "Backup și restaurare bază de date",
+  "admin.backup.btn_create": "Creează backup",
+  "admin.backup.btn_restore": "Restaurează din backup",
+  "admin.backup.status_ok": "Backup salvat: {0}",
+  "admin.backup.status_err": "Backup eșuat.",
+  "admin.backup.success_msg": "Backup creat cu succes:\n{0}",
+  "admin.backup.err_title": "Eroare backup",
+
+  "admin.restore.title": "Restaurare bază de date",
+  "admin.restore.dialog_title": "Selectează fișierul de backup pentru restaurare",
+  "admin.restore.confirm_title": "Confirmare restaurare",
+  "admin.restore.confirm_msg": "Aceasta va înlocui baza de date curentă cu backup-ul selectat.\nToate datele adăugate după backup vor fi pierdute.\n\nEști sigur că vrei să continui?",
+  "admin.restore.success_msg": "Baza de date a fost restaurată cu succes. Unele pagini pot afișa date vechi până la navigare.",
+  "admin.restore.err_title": "Eroare restaurare",
+
+  "admin.audit.title": "Jurnal de activitate",
+  "admin.audit.col.time": "Dată și oră",
+  "admin.audit.col.user": "Utilizator",
+  "admin.audit.col.action": "Acțiune",
+  "admin.audit.col.entity": "Tip entitate",
+  "admin.audit.col.id": "ID",
+  "admin.audit.col.details": "Detalii",
+  "admin.audit.filter.from": "De la",
+  "admin.audit.filter.to": "Până la",
+  "admin.audit.filter.all_actions": "Toate acțiunile",
+  "admin.audit.filter.user": "Caută utilizator…",
+  "admin.audit.export_success": "Jurnalul a fost exportat la:\n{0}"
 }

@@ -246,6 +246,20 @@ public static class DatabaseHelper
                 LastMsgId INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (CourseId, UserId)
             );
+
+            CREATE TABLE IF NOT EXISTS AuditLog (
+                Id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                Timestamp  TEXT    NOT NULL DEFAULT '',
+                UserId     INTEGER NOT NULL DEFAULT 0,
+                UserName   TEXT    NOT NULL DEFAULT '',
+                Action     TEXT    NOT NULL DEFAULT '',
+                EntityType TEXT    NOT NULL DEFAULT '',
+                EntityId   TEXT    NOT NULL DEFAULT '',
+                Details    TEXT    NOT NULL DEFAULT ''
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_AuditLog_Timestamp ON AuditLog(Timestamp);
+            CREATE INDEX IF NOT EXISTS IX_AuditLog_UserId    ON AuditLog(UserId);
         ";
         cmd.ExecuteNonQuery();
 
