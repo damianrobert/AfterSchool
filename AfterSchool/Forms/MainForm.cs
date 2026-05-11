@@ -102,7 +102,9 @@ public class MainForm : Form
         AddNavButton("nav.messages",   "nav.messages.title",   () => new DirectChatControl());
         AddNavButton("nav.coursechat", "nav.coursechat.title", () => new CourseGroupChatControl());
 
-        if (Session.Current?.Role == "Staff")
+        var role = Session.Current?.Role ?? "";
+        if (!role.Equals("Teacher", StringComparison.OrdinalIgnoreCase) &&
+            !role.Equals("Student", StringComparison.OrdinalIgnoreCase))
             AddNavButton("nav.admin", "nav.admin.title", () => new AdminControl());
 
         Loc.LanguageChanged += OnLanguageChanged;
