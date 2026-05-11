@@ -14,7 +14,7 @@ public class SchedulePlannerControl : UserControl
     private const int   TimeEndMinutes   = 21 * 60;      // 21:00  (latest end = 19:30+90min)
     private const float PixelsPerMinute  = 1.2f;
     private const int   TimeAxisWidth    = 58;
-    private const int   DayHeaderHeight  = 56;
+    private const int   DayHeaderHeight  = 70;
 
     private static readonly string[] Days =
         { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
@@ -213,6 +213,13 @@ public class SchedulePlannerControl : UserControl
 
         _calArea.Controls.Clear();
 
+        // Load Romanian public holidays for all years visible in this week
+        var holidays = Enumerable.Range(0, Days.Length)
+            .Select(i => _weekStart.AddDays(i).Year)
+            .Distinct()
+            .SelectMany(y => Services.RomanianHolidays.GetHolidays(y))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
+
         int  gridH   = (int)((TimeEndMinutes - TimeStartMinutes) * PixelsPerMinute) + 10;
         int  totalH  = DayHeaderHeight + gridH;
         int  availW  = Math.Max(_calArea.ClientSize.Width, 640);
@@ -228,16 +235,25 @@ public class SchedulePlannerControl : UserControl
         // Day headers
         for (int i = 0; i < Days.Length; i++)
         {
-            var date    = _weekStart.AddDays(i);
-            bool today  = date.Date == DateTime.Today;
-            int  x      = TimeAxisWidth + i * colW;
-            int  ci     = i;
+            var  date       = _weekStart.AddDays(i);
+            bool today      = date.Date == DateTime.Today;
+            int  x          = TimeAxisWidth + i * colW;
+
+            holidays.TryGetValue(date.Date, out var holidayInfo);
+            bool   isHoliday   = holidayInfo != default;
+            string holidayName = isHoliday
+                ? (Loc.Current == "ro" ? holidayInfo.Ro : holidayInfo.En)
+                : "";
+
+            static Color HolidayRed(int a) => Color.FromArgb(a, 200, 40, 40);
 
             var hdr = new Panel
             {
                 Location  = new Point(x, 0),
                 Size      = new Size(colW, DayHeaderHeight),
-                BackColor = today ? Color.FromArgb(235, 244, 255) : Theme.Surface
+                BackColor = today     ? Color.FromArgb(235, 244, 255)
+                          : isHoliday ? Color.FromArgb(255, 242, 242)
+                          : Theme.Surface
             };
             hdr.Paint += (_, e) =>
             {
@@ -249,25 +265,43 @@ public class SchedulePlannerControl : UserControl
                     using var accent = new SolidBrush(Theme.Primary);
                     e.Graphics.FillRectangle(accent, 0, hdr.Height - 3, hdr.Width, 3);
                 }
+                else if (isHoliday)
+                {
+                    using var accent = new SolidBrush(HolidayRed(200));
+                    e.Graphics.FillRectangle(accent, 0, hdr.Height - 3, hdr.Width, 3);
+                }
             };
 
-            // Last-added = top in DockStyle.Top stacking
+            // Controls added last appear at the TOP (DockStyle.Top stacking)
+            // Add order: holidayLbl → dateLbl → dayLbl  (so dayLbl renders on top)
+            var holidayLbl = new Label
+            {
+                Text      = holidayName,
+                Font      = new Font("Segoe UI", 7.5f, FontStyle.Italic),
+                ForeColor = HolidayRed(190),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Dock      = DockStyle.Top,
+                Height    = 14
+            };
             var dateLbl = new Label
             {
-                Text = date.ToString("d MMM"),
-                Font = new Font("Segoe UI", 8.5f),
-                ForeColor = today ? Theme.Primary : Theme.TextSecondary,
+                Text      = date.ToString("d MMM"),
+                Font      = new Font("Segoe UI", 8.5f),
+                ForeColor = today ? Theme.Primary : isHoliday ? HolidayRed(180) : Theme.TextSecondary,
                 TextAlign = ContentAlignment.TopCenter,
-                Dock = DockStyle.Top, Height = 20
+                Dock      = DockStyle.Top,
+                Height    = 18
             };
             var dayLbl = new Label
             {
-                Text = Loc.T($"days.{Days[i].ToLower()}"),
-                Font = new Font("Segoe UI Semibold", 10f),
-                ForeColor = today ? Theme.Primary : Theme.TextPrimary,
+                Text      = Loc.T($"days.{Days[i].ToLower()}"),
+                Font      = new Font("Segoe UI Semibold", 10f),
+                ForeColor = today ? Theme.Primary : isHoliday ? HolidayRed(200) : Theme.TextPrimary,
                 TextAlign = ContentAlignment.BottomCenter,
-                Dock = DockStyle.Top, Height = 30
+                Dock      = DockStyle.Top,
+                Height    = 30
             };
+            hdr.Controls.Add(holidayLbl);
             hdr.Controls.Add(dateLbl);
             hdr.Controls.Add(dayLbl);
             canvas.Controls.Add(hdr);
@@ -307,10 +341,12 @@ public class SchedulePlannerControl : UserControl
         // Day body columns with slot cards
         for (int i = 0; i < Days.Length; i++)
         {
-            var  day      = Days[i];
-            int  x        = TimeAxisWidth + i * colW;
-            bool isToday  = _weekStart.AddDays(i).Date == DateTime.Today;
-            int  ci       = i;
+            var  day        = Days[i];
+            int  x          = TimeAxisWidth + i * colW;
+            var  colDate    = _weekStart.AddDays(i).Date;
+            bool isToday    = colDate == DateTime.Today;
+            bool isHoliday  = holidays.ContainsKey(colDate);
+            int  ci         = i;
 
             var daySlots = _slots
                 .Where(s => string.Equals(s.DayOfWeek, day, StringComparison.OrdinalIgnoreCase))
@@ -323,7 +359,7 @@ public class SchedulePlannerControl : UserControl
                 Size      = new Size(colW, gridH),
                 BackColor = Theme.Surface
             };
-            col.Paint += (_, e) => PaintDayColumn(e.Graphics, col.Width, col.Height, isToday, hourCount);
+            col.Paint += (_, e) => PaintDayColumn(e.Graphics, col.Width, col.Height, isToday, isHoliday, hourCount);
 
             col.MouseClick += (_, e) =>
             {
@@ -341,11 +377,16 @@ public class SchedulePlannerControl : UserControl
         _calArea.Controls.Add(canvas);
     }
 
-    private static void PaintDayColumn(Graphics g, int w, int h, bool isToday, int hourCount)
+    private static void PaintDayColumn(Graphics g, int w, int h, bool isToday, bool isHoliday, int hourCount)
     {
         if (isToday)
         {
             using var fill = new SolidBrush(Color.FromArgb(15, 59, 130, 246));
+            g.FillRectangle(fill, 0, 0, w, h);
+        }
+        else if (isHoliday)
+        {
+            using var fill = new SolidBrush(Color.FromArgb(10, 200, 40, 40));
             g.FillRectangle(fill, 0, 0, w, h);
         }
 
