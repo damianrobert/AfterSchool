@@ -37,12 +37,24 @@ public class SchedulePlannerControl : UserControl
     private readonly Panel   _calArea    = new();
     private readonly ToolTip _cardTip    = new() { AutoPopDelay = 6000, ShowAlways = true };
 
+    private readonly System.Windows.Forms.Timer _timelineTimer = new() { Interval = 30_000 };
+    private readonly List<Panel> _dayColumns = new();
+    private Panel? _timeAxis;
+
     public SchedulePlannerControl()
     {
         BackColor  = Theme.Background;
         _weekStart = GetMonday(DateTime.Today);
         BuildLayout();
         ReloadSlots();
+        _timelineTimer.Tick += (_, _) => { foreach (var c in _dayColumns) c.Invalidate(); _timeAxis?.Invalidate(); };
+        _timelineTimer.Start();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) { _timelineTimer.Stop(); _timelineTimer.Dispose(); _cardTip.Dispose(); }
+        base.Dispose(disposing);
     }
 
     private static DateTime GetMonday(DateTime d)
@@ -212,6 +224,8 @@ public class SchedulePlannerControl : UserControl
         if (_calArea.ClientSize.Width == 0) return;
 
         _calArea.Controls.Clear();
+        _dayColumns.Clear();
+        bool isCurrentWeek = _weekStart <= DateTime.Today && DateTime.Today < _weekStart.AddDays(Days.Length);
 
         // Load Romanian public holidays for all years visible in this week
         var holidays = Enumerable.Range(0, Days.Length)
@@ -318,7 +332,18 @@ public class SchedulePlannerControl : UserControl
         {
             using var pen = new Pen(Theme.Border);
             e.Graphics.DrawLine(pen, axis.Width - 1, 0, axis.Width - 1, axis.Height);
+            if (isCurrentWeek)
+            {
+                int nowMin = DateTime.Now.Hour * 60 + DateTime.Now.Minute;
+                if (nowMin >= TimeStartMinutes && nowMin <= TimeEndMinutes)
+                {
+                    int y = (int)((nowMin - TimeStartMinutes) * PixelsPerMinute);
+                    using var dot = new SolidBrush(Color.FromArgb(239, 68, 68));
+                    e.Graphics.FillEllipse(dot, axis.Width - 8, y - 4, 8, 8);
+                }
+            }
         };
+        _timeAxis = axis;
 
         int hourCount = (TimeEndMinutes - TimeStartMinutes) / 60;
         for (int h = 0; h <= hourCount; h++)
@@ -359,7 +384,11 @@ public class SchedulePlannerControl : UserControl
                 Size      = new Size(colW, gridH),
                 BackColor = Theme.Surface
             };
-            col.Paint += (_, e) => PaintDayColumn(e.Graphics, col.Width, col.Height, isToday, isHoliday, hourCount);
+            col.Paint += (_, e) =>
+            {
+                int nowMin = isCurrentWeek ? (DateTime.Now.Hour * 60 + DateTime.Now.Minute) : -1;
+                PaintDayColumn(e.Graphics, col.Width, col.Height, isToday, isHoliday, hourCount, nowMin);
+            };
 
             col.MouseClick += (_, e) =>
             {
@@ -371,13 +400,14 @@ public class SchedulePlannerControl : UserControl
             foreach (var (slot, colIdx, colCount) in layout)
                 col.Controls.Add(MakeSlotCard(slot, colW, colIdx, colCount));
 
+            _dayColumns.Add(col);
             canvas.Controls.Add(col);
         }
 
         _calArea.Controls.Add(canvas);
     }
 
-    private static void PaintDayColumn(Graphics g, int w, int h, bool isToday, bool isHoliday, int hourCount)
+    private static void PaintDayColumn(Graphics g, int w, int h, bool isToday, bool isHoliday, int hourCount, int nowMin = -1)
     {
         if (isToday)
         {
@@ -403,6 +433,18 @@ public class SchedulePlannerControl : UserControl
 
             int y2 = (int)((hh * 60 + 30) * PixelsPerMinute);
             if (y2 < h) g.DrawLine(halfPen, 1, y2, w, y2);
+        }
+
+        if (nowMin >= TimeStartMinutes && nowMin <= TimeEndMinutes)
+        {
+            int ty = (int)((nowMin - TimeStartMinutes) * PixelsPerMinute);
+            if (ty >= 0 && ty <= h)
+            {
+                using var linePen = new Pen(Color.FromArgb(220, 239, 68, 68), 2);
+                g.DrawLine(linePen, 1, ty, w, ty);
+                using var dotBrush = new SolidBrush(Color.FromArgb(239, 68, 68));
+                g.FillEllipse(dotBrush, -1, ty - 4, 8, 8);
+            }
         }
     }
 
