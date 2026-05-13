@@ -8,6 +8,7 @@ public class Schedule
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string Room { get; set; } = string.Empty;
+    public bool AddedByMilo { get; set; }
 }
 
 public class ScheduleView
@@ -20,4 +21,5 @@ public class ScheduleView
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string Room { get; set; } = string.Empty;
+    public bool AddedByMilo { get; set; }
 }

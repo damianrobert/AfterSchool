@@ -15,3 +15,7 @@
 *.db
 *.db-shm
 *.db-wal
+
+#Environment files
+.env
+.env.local

@@ -7,7 +7,7 @@ public static class ScheduleRepository
 {
     private const string ViewQuery = @"
         SELECT s.Id, s.CourseId, c.Name AS CourseName, c.Teacher,
-               s.DayOfWeek, s.StartTime, s.EndTime, s.Room
+               s.DayOfWeek, s.StartTime, s.EndTime, s.Room, s.AddedByMilo
         FROM Schedule s
         INNER JOIN Courses c ON c.Id = s.CourseId";
 
@@ -37,8 +37,8 @@ public static class ScheduleRepository
     {
         using var conn = DatabaseHelper.CreateConnection();
         return conn.ExecuteScalar<int>(@"
-            INSERT INTO Schedule (CourseId, DayOfWeek, StartTime, EndTime, Room)
-            VALUES (@CourseId, @DayOfWeek, @StartTime, @EndTime, @Room);
+            INSERT INTO Schedule (CourseId, DayOfWeek, StartTime, EndTime, Room, AddedByMilo)
+            VALUES (@CourseId, @DayOfWeek, @StartTime, @EndTime, @Room, @AddedByMilo);
             SELECT last_insert_rowid();", slot);
     }
 

@@ -1,0 +1,53 @@
+Here's a prioritized list of suggestions based on what the app currently has and what would provide the most value:
+
+---
+High Impact / Missing Core Features
+
+1. Attendance Tracking
+The schedule planner knows when classes happen, but there's no way to mark who actually showed up. A simple roll-call UI per session (present / absent / late) with a daily attendance summary on the dashboard would be very practical. You could also set thresholds — alert when a student misses more than X% of sessions.
+
+2. Parent/Guardian Portal
+Students can log in, but parents have no visibility. A read-only parent role with access to their child's grades, attendance, and assignment status would be very valuable for an afterschool context where parents are paying and want to stay informed.
+
+3. Fee & Payment Tracking
+No financial layer exists at all. A simple payments table (amount, date, method, notes) linked to students with a balance view and overdue alerts would make the app much more complete for administrative staff.
+
+4. Bulk Student Import (CSV/Excel)
+Enrollment is one-by-one right now. A CSV/Excel import with a preview step and duplicate detection would save huge amounts of time at the start of a semester.
+
+---
+Meaningful Enhancements to Existing Features
+
+5. Dashboard Drill-Downs
+The stat cards (total students, today's classes, etc.) are read-only. Making them clickable — e.g., clicking "Today's Classes" navigates to Schedule filtered to today — would make the dashboard actually useful as a navigation hub.
+
+6. Student Progress Report (PDF)
+The transcript export exists for grades, but a combined report per student (grades + attendance once that exists + assignment completion rate + teacher notes) would be the kind of document parents and students actually ask for. ClosedXML/PDF export is already wired in.
+
+7. Assignment Grading
+Assignments track submissions but teachers can't grade them within the app. A simple grade/feedback field on each submission (linked back to the Grades systemn assignments and grades.
+
+8. Teacher Profiles Table
+Right now teachers are stored as a free-text field on courses. A proper Teachers table would allow teacher-specific
+pages (their schedule, their courses, worklo-duplicates like "Ion Pop" vs "Ion Pop ".
+
+---
+Quality-of-Life / UX
+
+9. Global Search
+No way to search across the whole app. A Ctrinds students by name, courses by title, orassignments by keyword would save a lot of clicking.
+
+10. Dark Mode
+The sidebar is already dark. A full dark modson like the language preference) would bestraightforward to add given the theme system already exists.                                                       
+11. Database Backup & Restore UI                                                                                    The SQLite file is easy to copy, but there'simple "Backup now → saves timestamped copy to Documents" button under a Settings page would protect against data loss.                                           
+12. Audit Log / Activity History                                                                                    No record of who changed what. A lightweightestamp, record affected) and a simple viewerfor admins would be valuable in any system managing student data.                                                   
+---                                                                                                                 Stretch / Nice-to-Have
+                                                                                                                    13. Event/Holiday Calendar
+Currently the schedule planner only shows recurring class slots. A separate layer for one-off events (school trips, exams, holidays) would make it a proper scho
+                                                                                                                    14. Course Waitlist
+Courses have a capacity field but no waitlist. When a course is full, students could be put on a waitlist and       automatically notified if a spot opens.
+                                                                                                                    15. Milo as a Grading Assistant
+Milo (the AI chat) currently helps with scheduling. Extending its context to include student grades and assignments would let teachers ask things like "Which stf failing?" and get a real answer.
+
+16. iCal / Google Calendar Export
+Exporting the schedule as an .ics file would let students and teachers add their weekly classes directly to their phone calendar with zero effort.

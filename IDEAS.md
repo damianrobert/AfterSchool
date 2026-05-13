@@ -1,258 +1,191 @@
-# AfterSchool Management System — Development Ideas
+# AfterSchool Management System — Feature Ideas
 
-A brainstorm of features and improvements to make the app more complex, complete, and modern.
-
----
-
-## 1. Attendance Tracking
-
-**What:** A daily/session-based register where teachers or staff mark each student as Present, Absent, or Late for each scheduled slot.
-
-**Why it matters:** Currently the app manages who is *enrolled* but not who actually *shows up*. Attendance data enables a whole new layer of analytics.
-
-**Ideas:**
-- Attendance sheet per schedule slot (auto-populated from enrolled students)
-- Bulk mark all as present, then flag exceptions
-- Attendance percentage per student shown in the Enrollment Center grid
-- Alert when a student's attendance drops below a threshold (e.g. below 70%)
-- Weekly/monthly attendance summary report exported to Excel
+This document collects ideas for expanding the system beyond its current state.
+Current coverage: infrastructure, course manager, schedule planner (calendar), enrollment center,
+reports/Excel export, authentication, dashboard, text-to-speech, EN/RO i18n, grades & transcripts.
 
 ---
 
-## 2. Grades & Performance Tracking
+## High-Value Next Steps
 
-**What:** Allow teachers to record grades or evaluation scores for students per course.
+### 1. Attendance Tracking
+Mark daily attendance per course session. Each record ties a student, a schedule slot, and a date
+to a status: Present / Absent / Late / Excused.
 
-**Ideas:**
-- Configurable grading scale per course (numeric 1–10, letter A–F, Pass/Fail)
-- Grade entry dialog accessible from the Enrollment Center
-- Student transcript view — all courses + grades in one page
-- Class average and ranking per course
-- Grade trend chart per student over time
-- Export grade sheets to Excel
+- Attendance sheet view: one row per student, columns = days of the month.
+- Quick-mark toolbar: "Mark all present" then flip individual cells.
+- Summary stats: attendance rate per student and per course.
+- Alerts when a student falls below a configurable threshold (e.g. < 75%).
+- Excel export: monthly attendance sheet with color-coded cells.
+- Translations: `attendance.*` key group.
 
----
+### 2. Fee & Payment Tracking
+Record tuition payments per student per month, track outstanding balances.
 
-## 3. Charts & Visual Analytics (embedded graphs)
+- `Payments` table: `StudentId`, `Amount`, `PaidDate`, `Month`, `Notes`, `RecordedBy`.
+- Payment status on the Enrollment Center grid: green = paid, yellow = partial, red = overdue.
+- Monthly fee configuration per course (store in `Courses.MonthlyFee`).
+- "Overdue" filter to quickly find unpaid students.
+- Excel export: payment history and balance summary.
 
-**What:** Replace the plain stat cards on the Dashboard with actual charts using a charting library (e.g. `LiveChartsCore.SkiaSharpView.WinForms` or `ScottPlot`).
+### 3. Student Progress Report (PDF)
+Combine grades, attendance, and notes into a single printable PDF per student.
 
-**Ideas:**
-- Enrollment trend line chart (registrations per month over time)
-- Course popularity bar chart (enrolled count per course)
-- Attendance rate pie/donut chart per course
-- Student status breakdown (Active / Inactive / Graduated) donut chart
-- Daily class load bar chart (how many classes per day of the week)
+- Requires a PDF library such as `QuestPDF` or `PdfSharp`.
+- Sections: student info header, grade table (all courses), attendance summary, teacher notes.
+- Available from both the Grades screen (Transcript button) and the Enrollment Center.
+- Bilingual: generate in EN or RO based on active locale.
 
----
+### 4. Bulk Import from Excel / CSV
+Let staff paste a spreadsheet of new students rather than entering them one-by-one.
 
-## 4. Parent / Guardian Management
+- `OpenFileDialog` filtered to `.xlsx` and `.csv`.
+- Preview grid showing parsed rows before committing.
+- Column-mapping step (handle variant column names).
+- Duplicate detection by first + last name + birth date.
+- Error rows highlighted with a reason; valid rows imported in a transaction.
 
-**What:** Each student can have one or more parent/guardian contacts linked to them.
+### 5. Role-Based Access Control
+The `Users` table already has a `role` column. Enforce it in the UI.
 
-**Ideas:**
-- Guardians table: name, relationship, phone, email
-- Link multiple guardians per student
-- "Contact guardian" button that pre-fills a mailto: link
-- Show guardian info in the student editor
-- Include guardian contacts in the class-list Excel export
-
----
-
-## 5. Fee & Payment Tracking
-
-**What:** Track enrollment fees and payments per student.
-
-**Ideas:**
-- Fee amount configurable per course
-- Payment records: date, amount, method (cash / transfer / card)
-- Outstanding balance shown in the Enrollment Center grid
-- Overdue payment alert (highlight rows with unpaid balance)
-- Invoice/receipt generation exported to PDF or Excel
-- Monthly revenue summary report
+- **Administrator**: full access including user management.
+- **Staff**: CRUD on students, courses, schedule, grades, attendance.
+- **Teacher**: read-only on courses and schedule; can enter grades and attendance for their own courses only.
+- Hide or disable nav items and action buttons based on `Session.CurrentUser.Role`.
+- A **User Management** screen (admin-only): list users, create/deactivate accounts, change roles.
 
 ---
 
-## 6. Teacher Profiles & Workload
+## Operational Improvements
 
-**What:** Expand teacher records beyond just a username — full profiles with contact info, specialisation, and schedule load.
+### 6. Waitlist Management
+When a course reaches `Capacity`, new enrollment requests go onto a waitlist.
 
-**Ideas:**
-- Teachers table linked to the Users table
-- Profile page: bio, subject areas, contact details
-- Workload view: how many hours/slots per week each teacher is assigned
-- Max-hours constraint with a warning when exceeded
-- Substitute teacher assignment for a specific slot
-- Teacher availability calendar (days/times they can teach)
+- `Waitlist` table: `StudentId`, `CourseId`, `RequestedAt`.
+- Enrollment Center shows a "Waitlisted" status badge.
+- When a student is removed from a course, the next person on the waitlist is highlighted for promotion.
 
----
+### 7. Teacher Profiles
+Replace the free-text `Teacher` column in `Courses` with a proper foreign key to a `Teachers` table.
 
-## 7. Waitlist Management
+- `Teachers` table: `Id`, `FirstName`, `LastName`, `Email`, `Phone`, `Specialization`.
+- Teacher picker in `CourseEditorDialog` (searchable ComboBox).
+- New **Teachers** nav screen: list, add, edit, deactivate.
+- Dashboard stat card: teacher count already present — link it to the Teachers screen.
 
-**What:** When a course reaches capacity, students can be placed on a waitlist and automatically notified when a spot opens.
+### 8. Room / Resource Management
+Replace the free-text `Room` column with a managed list of rooms.
 
-**Ideas:**
-- Waitlist table: student, course, position, date added
-- Auto-promote first waitlisted student when another student is transferred out
-- Waitlist view in the Enrollment Center filter options
-- "Promote from waitlist" button in the transfer dialog
+- `Rooms` table: `Id`, `Name`, `Capacity`, `Notes`.
+- Room picker in `ScheduleEditorDialog`.
+- Conflict detection: warn if a room is already booked for the same slot.
 
----
+### 9. Notifications & Reminders
+In-app notification center for time-sensitive alerts.
 
-## 8. Notifications & Announcements (in-app)
+- Overdue payments, low-attendance students, courses at capacity.
+- Bell icon in the top bar with an unread badge count.
+- Notification log stored in a `Notifications` table (shown and then marked read).
 
-**What:** An in-app notification centre for administrative alerts and an announcements board for general notices.
+### 10. Event / Holiday Calendar
+Track school-wide events and public holidays so the schedule planner can show them.
 
-**Ideas:**
-- Notifications panel (bell icon in the top bar with badge count)
-- Auto-generated notifications: low attendance alert, course at capacity, upcoming exam
-- Announcements CRUD: create a notice with title, body, and expiry date
-- Announcements visible on the Dashboard in a scrollable card
-- Mark as read / dismiss
-
----
-
-## 9. Document Attachments
-
-**What:** Attach files (PDFs, images) directly to student records — e.g. consent forms, medical notes, ID copies.
-
-**Ideas:**
-- Store file path (or binary blob) in a new `StudentDocuments` table
-- Upload button in the student editor opens a file picker
-- Attachments list with open/remove actions
-- Warning if a required document is missing (configurable per course)
+- `Events` table: `Date`, `Title`, `Type` (Holiday / Event / Exam).
+- Calendar view highlights event days with a banner.
+- "No class" indicator on holiday slots.
 
 ---
 
-## 10. Student Photo / Avatar
+## Reporting Enhancements
 
-**What:** Store a profile photo per student, displayed in the editor and class lists.
+### 11. Print Support
+Add a **Print** button alongside **Export** on the Reports and Grades screens.
 
-**Ideas:**
-- Photo stored as a path (relative to app data folder)
-- Circular crop preview in the student editor
-- Thumbnail column in the Enrollment Center grid
-- Photo included in the printed class list
+- Use `PrintDocument` + `PrintPreviewDialog` (already in .NET WinForms).
+- Render class lists, schedule, and grade sheets to printer pages.
+- No extra library required.
 
----
+### 12. Dashboard Drill-Downs
+Make the dashboard stat cards clickable to jump to filtered views.
 
-## 11. PDF Export
+- "Active students" card → Enrollment Center pre-filtered to Active.
+- "Today's classes" card → Schedule Planner scrolled to today.
+- "Top courses" bar chart → Course Manager filtered to the clicked course.
 
-**What:** Export reports directly to PDF in addition to Excel — useful for printing or sharing without Excel installed.
+### 13. Monthly & Yearly Summary Reports
+Aggregate data for a chosen period.
 
-**Ideas:**
-- Use `QuestPDF` (MIT licence) for layout-rich PDFs
-- PDF class lists with school header, student photos (optional), and signature lines
-- PDF schedule grid (the weekly timetable as a printable page)
-- PDF student transcript
+- Enrollment trend: new students per month (bar chart).
+- Revenue summary (if fee tracking is added).
+- Grade distribution across all courses.
+- Export to a multi-sheet Excel workbook.
 
----
+### 14. Course Completion Certificates
+Generate a simple certificate document for students who finish a course.
 
-## 12. Role-Based Access Control (RBAC)
-
-**What:** The app already has Admin and Teacher roles but doesn't restrict UI access based on role.
-
-**Ideas:**
-- Teacher role sees only their assigned courses and those students
-- Admin-only sections: user management, financial data, system settings
-- Read-only mode for a "Viewer" role
-- Audit log: every insert/update/delete records who did it and when
-- User management screen (admin can create/deactivate accounts, change roles)
+- Template with student name, course name, teacher name, completion date, and a signature line.
+- Generate as PDF (QuestPDF) or as a formatted Word document (OpenXml).
+- Trigger from the Grades screen for students with a passing grade.
 
 ---
 
-## 13. Global Search
+## UX / Interface
 
-**What:** A single search box (Ctrl+F or top-bar) that searches across students, courses, teachers, and schedule slots simultaneously.
+### 15. Dark Mode
+Add a dark theme alongside the current light theme.
 
-**Ideas:**
-- Results grouped by category (Students / Courses / Schedule)
-- Click a result to navigate directly to that record
-- Recent searches history
+- `Theme` class already centralises all colors — add a `Theme.IsDark` flag and a second palette.
+- Toggle button in the top bar (sun/moon icon) or in a Settings screen.
+- Persist choice in `settings.json`.
 
----
+### 16. Student Photo / Avatar
+Store a profile photo for each student.
 
-## 14. Drag-and-Drop Schedule Builder
+- Add `PhotoPath` (TEXT) to the Students table.
+- Small avatar circle in the Enrollment Center grid and in the editor dialog.
+- Fallback initials avatar when no photo is set.
 
-**What:** Replace the current "Add slot" dialog with a drag-and-drop grid where you can drag a course card onto a day/time cell.
+### 17. Keyboard Shortcuts & Quick Search
+Power-user features for staff who use the app all day.
 
-**Ideas:**
-- Visual weekly grid with time rows (07:00 – 20:00)
-- Course palette on the left; drag onto the grid to create a slot
-- Drag existing slot to a new day/time to move it
-- Colour-coded by course
-- Conflict highlight (room double-booking shown in red)
+- Global `Ctrl+F` focuses a search bar regardless of active screen.
+- `Ctrl+N` opens the "Add" dialog for the active screen.
+- Status bar tooltip listing available shortcuts on each screen.
 
----
+### 18. Undo / Activity Log
+Track every create / update / delete action with user, timestamp, and old value.
 
-## 15. Backup & Restore
-
-**What:** One-click database backup and restore so administrators can protect data.
-
-**Ideas:**
-- "Backup now" button in a Settings screen: copies `afterschool.db` to a timestamped zip in Documents
-- Restore from backup: file picker, confirmation dialog, app restart
-- Automatic daily backup on launch (keep last 7 copies)
-- Backup reminder if no backup in the last 7 days (shown on Dashboard)
+- `AuditLog` table: `UserId`, `Action`, `EntityType`, `EntityId`, `Detail`, `At`.
+- **Audit Log** screen (admin-only): filterable by user, entity type, date range.
+- Optional: "Undo last action" for accidental deletes (restore from log).
 
 ---
 
-## 16. Settings Screen
+## Infrastructure & Reliability
 
-**What:** A dedicated settings panel for configurable app behaviour.
+### 19. Database Backup & Restore
+Let staff back up the database without needing external tools.
 
-**Ideas:**
-- School name and logo (shown in exports and print headers)
-- Default course capacity
-- Slot duration override (currently hard-coded to 90 minutes)
-- Attendance threshold for low-attendance alerts
-- Backup location and schedule
-- Theme toggle (Light / Dark mode)
+- **Backup**: copy `afterschool.db` to a user-chosen folder with a timestamp suffix.
+- **Restore**: open a backup file, validate it (check table names), replace the live DB after confirmation.
+- Optional: automatic backup on every app launch, keeping the last 7 copies.
 
----
+### 20. Settings Screen
+Central place for configuration currently scattered across code.
 
-## 17. Dark Mode
+- Default export folder.
+- Automatic backup toggle and retention count.
+- Language preference (already in `settings.json`, expose in UI).
+- App version and "About" section.
 
-**What:** A full dark theme switchable from Settings or a toggle button in the top bar.
+### 21. CSV Export (Lightweight Alternative to Excel)
+Some users just need plain CSV for imports into other systems.
 
-**Ideas:**
-- Add a `DarkTheme` colour set to `Theme.cs`
-- Persist preference to a JSON settings file next to the DB
-- Smooth transition (re-apply theme on all open controls)
+- One-click CSV export from the Enrollment Center and Course Manager.
+- No extra library — `StringBuilder` + `StreamWriter` is sufficient.
 
----
+### 22. Multi-Language Expansion
+The i18n framework is already in place. Add a third language with minimal effort.
 
-## 18. Keyboard Shortcuts
-
-**What:** Power-user keyboard shortcuts for common actions.
-
-**Ideas:**
-- Ctrl+N — New student / new course / new slot (context-aware)
-- Ctrl+E — Edit selected row
-- Delete — Delete selected row (with confirmation)
-- Ctrl+F — Focus search box
-- Ctrl+P — Print / export current view
-- F5 — Refresh current view
-
----
-
-## 19. Audit Log
-
-**What:** A searchable log of every data change: who changed what and when.
-
-**Ideas:**
-- `AuditLog` table: timestamp, user, action (Insert/Update/Delete), entity, old value (JSON), new value (JSON)
-- Audit log viewer screen with date-range filter and entity filter
-- Highlight recent changes on record open ("Last edited by X on Y")
-
----
-
-## 20. Multi-language / Localisation
-
-**What:** Support Romanian (the local language) alongside English.
-
-**Ideas:**
-- Resource file approach (`Strings.resx`, `Strings.ro.resx`)
-- Language toggle in Settings (takes effect on next launch)
-- Romanian locale for date formatting and number formatting
-- Export column headers in the selected language
+- Candidate: French (many West-African afterschool contexts use French alongside English).
+- Add `fr.json`, extend the language toggle to a three-way cycle or a dropdown.

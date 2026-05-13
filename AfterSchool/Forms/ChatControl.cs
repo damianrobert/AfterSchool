@@ -384,13 +384,14 @@ public class ChatControl : UserControl
 
         bubble.Controls.Add(rtb);
         row.Controls.Add(bubble);
-        _msgPanel.Controls.Add(row);
-        _bubbleRows.Add(row);
 
-        // Size + place this row, then extend the scroll range
+        // Measure first, then read ContentBottom (before row is in _bubbleRows),
+        // so ContentBottom sees the previous tail — not this row at y=0.
         int cw = Math.Max(_msgPanel.ClientSize.Width, 200);
         MeasureRow(row, cw);
         row.Location = new Point(0, ContentBottom());
+        _msgPanel.Controls.Add(row);
+        _bubbleRows.Add(row);
         ExtendScrollRange();
     }
 
